@@ -123,6 +123,16 @@ export function useUpdateCheck() {
 
       // 对比版本号
       hasUpdate.value = compareVersions(__APP_VERSION__, remote) < 0
+      // 用户已忽略过同一版本则不再提示
+      if (hasUpdate.value) {
+        try {
+          if (localStorage.getItem('cosmomail-update-dismissed') === data.latest) {
+            hasUpdate.value = false
+          }
+        } catch {
+          // ignore
+        }
+      }
       lastCheckedAt = Date.now()
 
       return { hasUpdate: hasUpdate.value, latestVersion: data.latest }
@@ -134,9 +144,14 @@ export function useUpdateCheck() {
     }
   }
 
-  /** 重置更新提示状态（用户点击"忽略"后调用） */
+  /** 重置更新提示状态（用户点击"忽略"后调用，同版本不再提示） */
   function dismiss() {
     hasUpdate.value = false
+    try {
+      localStorage.setItem('cosmomail-update-dismissed', latestVersion.value || '')
+    } catch {
+      // ignore
+    }
   }
 
   return {

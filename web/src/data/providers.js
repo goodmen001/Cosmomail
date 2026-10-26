@@ -99,14 +99,15 @@ export const providers = [
   {
     key: 'aliyun_qiye',
     name: '阿里企业邮',
-    domain: 'qiye.aliyun.com',
+    domain: '',
     brandColor: '#FF6A00',
     icon: '',
     svgIcon: '<svg t="1783087436033" class="icon" viewBox="0 0 1653 1024" version="1.1" xmlns="http://www.w3.org/200/svg"><path d="M344.8620198 721.82988526a57.857089 57.857089 0 0 1-46.13274501-56.07295017v-308.4012244a59.89610558 59.89610558 0 0 1 46.13274501-56.07295017l286.35436058-62.06256065 30.07549089-122.72329718H328.80476645A210.78331632 210.78331632 0 0 0 116.61962599 327.28021902v364.47417458a213.71440233 213.71440233 0 0 0 212.18514046 212.31257895h332.48710482l-30.07549089-122.21354321zM1178.05508073 116.49690269H843.01920461l30.58524561 122.72329718 286.35436059 62.06256065a57.98452749 57.98452749 0 0 1 46.132745 56.07295017v308.4012244a60.15098257 60.15098257 0 0 1-46.13274502 56.07295017l-286.35436057 62.06256066-30.58524561 122.72329716H1178.05508073a212.44001744 212.44001744 0 0 0 212.94977139-212.82233291V327.28021902A213.33208686 213.33208686 0 0 0 1178.05508073 116.49690269z" fill="#F76E05"></path><path d="M631.21638038 495.49906876h244.29964793v30.07549166H631.21638038z" fill="#F76E05"></path></svg>',
     oauthRequired: false,
+    noDomainSuffix: true, // 企业域名各不相同，不绑定 @qiye.aliyun.com 后缀
     preset: { protocol: 'imap', host: 'imap.qiye.aliyun.com', port: 993, smtpHost: 'smtp.qiye.aliyun.com', smtpPort: 465 },
     popPreset: { protocol: 'pop3', host: 'pop.qiye.aliyun.com', port: 995, smtpHost: 'smtp.qiye.aliyun.com', smtpPort: 465 },
-    helpText: '阿里企业邮（企业邮箱）：IMAP 收信 imap.qiye.aliyun.com:993，POP3 收信 pop.qiye.aliyun.com:995，发信 smtp.qiye.aliyun.com:465，均使用 SSL。密码为邮箱登录密码（或管理员开启的专用密码）'
+    helpText: '阿里企业邮（企业邮箱）：收发服务器不变，邮箱地址使用贵司自己的域名（如 name@yourcompany.com）。IMAP 收信 imap.qiye.aliyun.com:993，POP3 收信 pop.qiye.aliyun.com:995，发信 smtp.qiye.aliyun.com:465，均使用 SSL。密码为邮箱登录密码（或管理员开启的专用密码）'
   }
 ]
 

@@ -79,6 +79,20 @@ func Init(dsn string) *gorm.DB {
 		log.Printf("⚠️  移除旧单管理员约束失败: %v", err)
 	}
 
+	// 旧版本升级兼容：多用户版新增 is_admin 字段，历史用户默认全部 false。
+	// 若没有任何管理员，则把最早注册的用户提升为管理员，否则无人能进入用户管理/注册开关。
+	var totalUsers, adminUsers int64
+	db.Model(&models.User{}).Count(&totalUsers)
+	db.Model(&models.User{}).Where("is_admin = ?", true).Count(&adminUsers)
+	if totalUsers > 0 && adminUsers == 0 {
+		var firstUser models.User
+		if err := db.Order("created_at ASC, id ASC").First(&firstUser).Error; err == nil {
+			if err := db.Model(&firstUser).Update("is_admin", true).Error; err == nil {
+				log.Printf("👑 已将最早注册的用户「%s」提升为管理员（旧版本升级兼容）", firstUser.Username)
+			}
+		}
+	}
+
 	// 迁移后清理：修复历史重复入库问题
 	// 1. 删除 account_id+folder+message_uid 维度的重复记录（保留最早入库的一条）
 	// 2. 将旧的带时间戳的 fallback message_id 更新为稳定格式

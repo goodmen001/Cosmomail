@@ -18,7 +18,7 @@
           <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/>
         </svg>
         <span>
-          发现新版本 <strong>v{{ latestVersion }}</strong>（当前 v{{ __APP_VERSION__ }}）
+          发现新版本 <strong>v{{ latestVersion }}</strong>（当前 v{{ appVersion }}）
           <a v-if="downloadUrl" :href="downloadUrl" target="_blank" rel="noopener" class="update-link">查看更新</a>
         </span>
       </div>
@@ -72,6 +72,9 @@ import AppToast from './components/AppToast.vue'
 import { useAppStore } from './stores/appStore'
 import { useMailStore } from './stores/mailStore'
 import { useAuthStore } from './stores/authStore'
+
+// 模板中无法直接访问 vite define 的全局常量，需在 setup 中显式暴露
+const appVersion = __APP_VERSION__
 import { useToast } from './composables/useToast'
 import { useUpdateCheck } from './composables/useUpdateCheck'
 
