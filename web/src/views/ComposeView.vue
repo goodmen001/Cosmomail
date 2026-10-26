@@ -413,6 +413,7 @@ function insertLink() {
 onMounted(async () => {
   await accountStore.fetchAccounts()
   accounts.value = accountStore.accounts || []
+  loadContacts() // 加载发信收件人记录（联系人建议）
 
   // 从路由参数预填信息（回复）
   if (route.query.replyTo) form.value.to = [route.query.replyTo]
