@@ -1,3 +1,31 @@
 #!/bin/bash
-exit 0
 
+### 卸载回调：根据用户在卸载向导中的选择处理邮件数据
+###   purge_data=keep  → 保留数据（下次安装可继续使用）
+###   purge_data=purge → 删除全部数据（数据库、附件、运行文件）
+
+# 数据目录解析逻辑与 cmd/main 保持一致
+DATA_DIR="${TRIM_PKGVAR}/data"
+if [ -r "${TRIM_PKGETC}/data_dir" ]; then
+    CUSTOM_DATA_DIR="$(head -n 1 "${TRIM_PKGETC}/data_dir" | tr -d '[:space:]')"
+    case "${CUSTOM_DATA_DIR}" in
+        /*) DATA_DIR="${CUSTOM_DATA_DIR}" ;;
+    esac
+fi
+
+case "${purge_data:-keep}" in
+    purge)
+        # 删除数据库、附件、上传文件等全部应用数据
+        if [ -d "${DATA_DIR}" ]; then
+            rm -rf "${DATA_DIR}"
+        fi
+        # 清理运行时文件（日志、pid、数据目录指针）
+        rm -f "${TRIM_PKGVAR}/cosmomail.log" "${TRIM_PKGVAR}/cosmomail.pid"
+        rm -f "${TRIM_PKGETC}/data_dir"
+        ;;
+    *)
+        # 保留数据：不做任何删除，下次安装沿用原数据库
+        ;;
+esac
+
+exit 0
