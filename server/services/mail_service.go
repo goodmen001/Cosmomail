@@ -538,11 +538,7 @@ func (s *MailService) SendMail(req smtp.SendRequest) (*smtp.SendResult, error) {
 		return nil, fmt.Errorf("邮箱账号不存在 (ID=%d)", req.AccountID)
 	}
 
-	if account.Password == "" {
-		return nil, fmt.Errorf("该邮箱账号未设置密码，无法发送邮件")
-	}
-
-	return smtp.SendMail(&account, &req)
+	return smtp.SendMail(&account, &req, s.db)
 }
 
 // SaveSentMail 保存已发送邮件到数据库

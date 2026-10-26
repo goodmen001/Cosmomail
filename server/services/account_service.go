@@ -136,14 +136,35 @@ func (s *AccountService) Update(id uint, req models.AccountRequest) (*models.Acc
 		"protocol":         req.Protocol,
 		"imap_host":        req.Host,
 		"port":             req.Port,
-		"smtp_host":        req.SmtpHost,
-		"smtp_port":        req.SmtpPort,
 		"username":         req.Username,
 		"proxy_enabled":    req.ProxyEnabled,
 		"proxy_url":        req.ProxyURL,
 		"sync_mode":        req.SyncMode,
 		"sync_days":        req.SyncDays,
 		"delete_on_server": req.DeleteOnServer,
+	}
+
+	// 仅在请求中携带了 SMTP 配置时更新，避免未填写时覆盖丢失已有发件配置
+	if req.SmtpHost != "" {
+		updates["smtp_host"] = req.SmtpHost
+		updates["smtp_port"] = req.SmtpPort
+	}
+
+	// OAuth2 相关字段
+	if req.AuthType != "" {
+		updates["auth_type"] = req.AuthType
+	}
+	if req.OAuthProvider != "" {
+		updates["oauth_provider"] = req.OAuthProvider
+	}
+	if req.RefreshToken != "" {
+		updates["refresh_token"] = req.RefreshToken
+	}
+	if req.CustomClientId != "" {
+		updates["custom_client_id"] = req.CustomClientId
+	}
+	if req.TokenExpiresAt != nil {
+		updates["token_expires_at"] = req.TokenExpiresAt
 	}
 
 	// 仅在提供了新密码时更新密码字段
