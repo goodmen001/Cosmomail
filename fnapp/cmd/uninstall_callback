@@ -4,6 +4,8 @@
 ###   purge_data=keep  → 保留数据（下次安装可继续使用）
 ###   purge_data=purge → 删除全部数据（数据库、附件、运行文件）
 
+LOG_PREFIX="[uninstall]"
+
 # 数据目录解析逻辑与 cmd/main 保持一致
 DATA_DIR="${TRIM_PKGVAR}/data"
 if [ -r "${TRIM_PKGETC}/data_dir" ]; then
@@ -13,13 +15,32 @@ if [ -r "${TRIM_PKGETC}/data_dir" ]; then
     esac
 fi
 
+# 查询管理员「应用共享授权」目录（cmd/main 的回退目标，数据可能落在其中）
+query_authorized_dir() {
+    [ -n "${TRIM_API_TOKEN}" ] && [ -S "/var/run/trim_open_gateway_apiscope.socket" ] || return 1
+    command -v curl >/dev/null 2>&1 || return 1
+    curl -s --max-time 5 --unix-socket /var/run/trim_open_gateway_apiscope.socket \
+        -X POST http://localhost/api/v1/trimapp \
+        -H 'Content-Type: application/json' \
+        -H "Authorization: Bearer ${TRIM_API_TOKEN}" \
+        -d "{\"reqId\":\"1\",\"req\":\"trim.file.getSharedAccessibleFolders\",\"appName\":\"com.goodmen001.cosmomail\",\"data\":{}}" \
+        2>/dev/null \
+        | sed -n 's/.*"paths":\[[^]]*"\([^"]*\)".*/\1/p' | head -n 1
+}
+
 case "${purge_data:-keep}" in
     purge)
-        # 删除数据库、附件、上传文件等全部应用数据
+        # 删除全部可能的数据位置（数据库、附件、上传文件）：
+        # 1. 自定义数据目录 / 默认数据目录
         if [ -d "${DATA_DIR}" ]; then
-            rm -rf "${DATA_DIR}"
+            rm -rf "${DATA_DIR}" 2>/dev/null
         fi
-        # 清理运行时文件（日志、pid、数据目录指针）
+        # 2. 管理员授权目录下的应用数据子目录（启动回退目标）
+        AUTH_DIR="$(query_authorized_dir)"
+        if [ -n "${AUTH_DIR}" ] && [ -d "${AUTH_DIR}/cosmomail-data" ]; then
+            rm -rf "${AUTH_DIR}/cosmomail-data" 2>/dev/null
+        fi
+        # 3. 运行时文件（日志、pid、数据目录指针）
         rm -f "${TRIM_PKGVAR}/cosmomail.log" "${TRIM_PKGVAR}/cosmomail.pid"
         rm -f "${TRIM_PKGETC}/data_dir"
         ;;
