@@ -25,7 +25,7 @@ docker compose up -d
 ```yaml
 services:
   cosmomail:
-    image: ghcr.io/goodmen001/Cosmomail:latest
+    image: ghcr.io/goodmen001/cosmomail:latest
     ports:
       - "8080:8080"
     volumes:

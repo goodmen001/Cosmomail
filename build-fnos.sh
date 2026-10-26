@@ -59,7 +59,7 @@ echo "▶ manifest 版本已同步: ${VERSION}"
     "${FNPACK}" build
 )
 
-RAW_PACKAGE="${PACKAGE_DIR}/com.qwernot.cosmomail.fpk"
+RAW_PACKAGE="${PACKAGE_DIR}/com.goodmen001.cosmomail.fpk"
 if [ ! -f "${RAW_PACKAGE}" ]; then
     echo "✗ fnpack 未生成 fpk 文件"
     exit 1

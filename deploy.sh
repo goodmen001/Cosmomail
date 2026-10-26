@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
-# Project: https://github.com/qwernot/Cosmomail
-# License: AGPL-3.0 (https://github.com/qwernot/Cosmomail/blob/main/LICENSE)
+# Project: https://github.com/goodmen001/Cosmomail
+# License: AGPL-3.0 (https://github.com/goodmen001/Cosmomail/blob/main/LICENSE)
 #
 # 用法: ./deploy.sh [命令] [选项]
 #
@@ -56,7 +56,7 @@ DIM='\033[2m'
 NC='\033[0m'
 
 # ─── 配置 ──────────────────────────────────────────
-REPO="qwernot/Cosmomail"
+REPO="goodmen001/Cosmomail"
 REPO_URL="https://github.com/${REPO}"
 API_URL="https://api.github.com/repos/${REPO}"
 RELEASE_URL="${API_URL}/releases/latest"
@@ -256,8 +256,8 @@ _is_github_api_or_release() {
 # 将 raw.githubusercontent.com URL 转为 jsDelivr CDN URL
 _to_jsdelivr_url() {
     local url="$1"
-    # https://raw.githubusercontent.com/qwernot/Cosmomail/main/deploy.sh
-    # → https://cdn.jsdelivr.net/gh/qwernot/Cosmomail@main/deploy.sh
+    # https://raw.githubusercontent.com/goodmen001/Cosmomail/main/deploy.sh
+    # → https://cdn.jsdelivr.net/gh/goodmen001/Cosmomail@main/deploy.sh
     echo "${url}" | sed -E 's|https?://raw\.githubusercontent\.com/[^/]+/[^/]+/|'"${JSDELVR_BASE}"'@|'
 }
 
@@ -662,7 +662,7 @@ create_systemd_service() {
     cat > "${service_file}" << SERVICEEOF
 [Unit]
 Description=Cosmo Mail Mail Management Service
-Documentation=https://github.com/qwernot/Cosmomail
+Documentation=https://github.com/goodmen001/Cosmomail
 After=network-online.target
 Wants=network-online.target
 StartLimitIntervalSec=60
@@ -960,11 +960,11 @@ _check_deploy_script() {
         error "部署脚本不存在: ${DEPLOY_SCRIPT}"
         echo ""
         warn "此功能需要部署脚本支持，请重新下载:"
-        echo "  curl -fsSL https://raw.githubusercontent.com/qwernot/Cosmomail/main/deploy.sh -o ${DEPLOY_SCRIPT}"
+        echo "  curl -fsSL https://raw.githubusercontent.com/goodmen001/Cosmomail/main/deploy.sh -o ${DEPLOY_SCRIPT}"
         echo "  chmod +x ${DEPLOY_SCRIPT}"
         echo ""
         echo "或者直接执行:"
-        echo "  curl -fsSL https://raw.githubusercontent.com/qwernot/Cosmomail/main/deploy.sh | sudo bash -s -- $*"
+        echo "  curl -fsSL https://raw.githubusercontent.com/goodmen001/Cosmomail/main/deploy.sh | sudo bash -s -- $*"
         exit 1
     fi
 }
@@ -1087,7 +1087,7 @@ _cmd_version() {
 
 # ─── 更新部署脚本（自包含）───────────────────────────
 _cmd_update_script() {
-    local script_url="https://raw.githubusercontent.com/qwernot/Cosmomail/main/deploy.sh"
+    local script_url="https://raw.githubusercontent.com/goodmen001/Cosmomail/main/deploy.sh"
     local backup="${DEPLOY_SCRIPT}.bak.$(date +%Y%m%d%H%M%S)"
     local tmpfile="${COSMOMAIL_INSTALL_DIR}/.deploy.sh.tmp"
 
@@ -1854,7 +1854,7 @@ show_help() {
     echo "  $0 logs 50                          # 查看 50 行日志"
     echo ""
     echo "仓库: ${REPO_URL}"
-    echo "文档: https://github.com/qwernot/Cosmomail/wiki"
+    echo "文档: https://github.com/goodmen001/Cosmomail/wiki"
     echo ""
     echo "安装后使用 cosmomail 命令管理:"
     echo "  cosmomail status | start | stop | restart | update | logs | doctor | version"
