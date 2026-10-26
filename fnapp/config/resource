@@ -1,2 +1,5 @@
-{}
-
+{
+  "api-scope": [
+    "trim.file.sharedAccess"
+  ]
+}

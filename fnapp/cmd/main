@@ -14,6 +14,19 @@ APP_BIN="${TRIM_APPDEST}/server/cosmomail"
 PORT_FILE="${TRIM_PKGETC}/port"
 APP_PORT="${wizard_port:-${TRIM_SERVICE_PORT:-8800}}"
 
+# 查询管理员「应用共享授权」的目录（fnOS 开放 API，Unix Socket + TRIM_API_TOKEN）
+query_authorized_dir() {
+    [ -n "${TRIM_API_TOKEN}" ] && [ -S "/var/run/trim_open_gateway_apiscope.socket" ] || return 1
+    command -v curl >/dev/null 2>&1 || return 1
+    curl -s --max-time 5 --unix-socket /var/run/trim_open_gateway_apiscope.socket \
+        -X POST http://localhost/api/v1/trimapp \
+        -H 'Content-Type: application/json' \
+        -H "Authorization: Bearer ${TRIM_API_TOKEN}" \
+        -d "{\"reqId\":\"1\",\"req\":\"trim.file.getSharedAccessibleFolders\",\"appName\":\"com.goodmen001.cosmomail\",\"data\":{}}" \
+        2>/dev/null \
+        | sed -n 's/.*"paths":\[[^]]*"\([^"]*\)".*/\1/p' | head -n 1
+}
+
 if [ -r "${PORT_FILE}" ]; then
     saved_port="$(head -n 1 "${PORT_FILE}" | tr -d '[:space:]')"
     case "${saved_port}" in
@@ -51,12 +64,21 @@ start_process() {
         return 0
     fi
 
-    # 自定义数据目录必须可写（应用以低权限用户运行）；不可写时回退到默认目录，
-    # 避免数据库/附件无法创建导致应用启动失败
+    # 自定义数据目录必须可写（应用以低权限用户运行）；不可写时依次回退：
+    # 1. 管理员「应用共享授权」目录（系统会自动授予应用账号 ACL 权限）
+    # 2. 默认数据目录，保证数据库/附件能创建、应用能启动
     if ! mkdir -p "${DATA_DIR}" 2>/dev/null || ! touch "${DATA_DIR}/.write_test" 2>/dev/null; then
-        log_msg "数据目录 ${DATA_DIR} 不可写，回退到默认目录 ${TRIM_PKGVAR}/data"
-        DATA_DIR="${TRIM_PKGVAR}/data"
-        mkdir -p "${DATA_DIR}" 2>/dev/null
+        AUTH_DIR="$(query_authorized_dir)"
+        if [ -n "${AUTH_DIR}" ] && mkdir -p "${AUTH_DIR}/cosmomail-data" 2>/dev/null \
+            && touch "${AUTH_DIR}/cosmomail-data/.write_test" 2>/dev/null; then
+            rm -f "${AUTH_DIR}/cosmomail-data/.write_test" 2>/dev/null
+            log_msg "数据目录 ${DATA_DIR} 不可写，改用管理员授权目录 ${AUTH_DIR}/cosmomail-data"
+            DATA_DIR="${AUTH_DIR}/cosmomail-data"
+        else
+            log_msg "数据目录 ${DATA_DIR} 不可写，回退到默认目录 ${TRIM_PKGVAR}/data"
+            DATA_DIR="${TRIM_PKGVAR}/data"
+            mkdir -p "${DATA_DIR}" 2>/dev/null
+        fi
     fi
     rm -f "${DATA_DIR}/.write_test" 2>/dev/null
     chmod 700 "${DATA_DIR}" 2>/dev/null
