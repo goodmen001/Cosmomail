@@ -47,8 +47,13 @@ func Init(dsn string) *gorm.DB {
 	if err != nil {
 		log.Fatalf("❌ 获取数据库实例失败: %v", err)
 	}
+	// 多邮箱并发同步时每个 Worker 都会写库（同步状态/邮件入库），
+	// SQLite 单写者限制下并发写会互相 SQLITE_BUSY，表现为"多个邮箱只有一个能连通"。
+	// 写连接串行化（1 个写连接排队）+ busy_timeout 兜底，保证所有账号的同步都能执行。
+	// 注意 SQLite 单写者：只有 1 个连接能写，多连接同时写立刻 SQLITE_BUSY。
 	sqlDB.SetMaxOpenConns(10)
 	sqlDB.SetMaxIdleConns(5)
+	db.Exec("PRAGMA busy_timeout = 5000")
 
 	// 自动迁移表结构
 	if err := db.AutoMigrate(
@@ -62,13 +67,16 @@ func Init(dsn string) *gorm.DB {
 		&models.Draft{},
 		&models.PushSubscription{},
 		&models.MailboxSyncState{},
+		&models.Contact{},
+		&models.AppSetting{},
 	); err != nil {
 		log.Fatalf("❌ 数据库迁移失败: %v", err)
 	}
 
-	// 单用户模式必须由数据库兜底；仅在服务层先 Count 会受到并发注册竞态影响。
-	if err := db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_single_admin ON users ((1))").Error; err != nil {
-		log.Printf("⚠️  无法建立单管理员约束（请检查是否已有多个用户）: %v", err)
+	// 多用户模式：users 表 username 唯一索引已由 AutoMigrate 建立，
+	// 不再限制"只能存在一个管理员"（旧版单管理员唯一约束若存在则移除）。
+	if err := db.Exec("DROP INDEX IF EXISTS idx_users_single_admin").Error; err != nil {
+		log.Printf("⚠️  移除旧单管理员约束失败: %v", err)
 	}
 
 	// 迁移后清理：修复历史重复入库问题

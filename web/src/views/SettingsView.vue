@@ -313,6 +313,63 @@
         </div>
       </section>
 
+      <!-- 账号与安全 -->
+      <section class="settings-section card">
+        <h3 class="section-title">账号与安全</h3>
+        <p class="section-desc">修改当前用户的登录密码</p>
+        <div class="password-form">
+          <label class="pwd-field">
+            <span>原密码</span>
+            <input v-model="pwdForm.oldPassword" type="password" class="form-input" autocomplete="current-password" />
+          </label>
+          <label class="pwd-field">
+            <span>新密码（至少 8 位）</span>
+            <input v-model="pwdForm.newPassword" type="password" class="form-input" autocomplete="new-password" />
+          </label>
+          <label class="pwd-field">
+            <span>确认新密码</span>
+            <input v-model="pwdForm.confirmPassword" type="password" class="form-input" autocomplete="new-password" />
+          </label>
+          <button class="btn btn-primary" :disabled="changingPwd" @click="handleChangePassword">
+            {{ changingPwd ? '保存中...' : '修改密码' }}
+          </button>
+        </div>
+      </section>
+
+      <!-- 用户管理（仅管理员可见） -->
+      <section v-if="authStore.isAdmin" class="settings-section card">
+        <div class="section-header-row">
+          <div>
+            <h3 class="section-title">用户管理</h3>
+            <p class="section-desc">管理注册用户，控制是否开放注册</p>
+          </div>
+          <label class="reg-toggle">
+            <input type="checkbox" :checked="regEnabled" @change="handleToggleRegistration" />
+            <span>开放注册</span>
+          </label>
+        </div>
+        <table class="user-table">
+          <thead>
+            <tr><th>用户名</th><th>角色</th><th>注册时间</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr v-for="u in users" :key="u.id">
+              <td>{{ u.username }} <span v-if="u.username === authStore.username" class="self-badge">（我）</span></td>
+              <td>{{ u.is_admin ? '管理员' : '普通用户' }}</td>
+              <td>{{ formatTime(u.created_at) }}</td>
+              <td>
+                <button
+                  v-if="u.username !== authStore.username"
+                  class="btn btn-danger btn-sm"
+                  @click="handleDeleteUser(u)"
+                >删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-if="users.length === 0" class="empty-hint">暂无用户</p>
+      </section>
+
       <!-- 关于信息 -->
       <section class="settings-section card">
         <h3 class="section-title">关于</h3>
@@ -391,6 +448,65 @@ import { sendTest as sendTestPush } from '@/api/push'
 
 const toast = useToast()
 const appStore = useAppStore()
+const authStore = useAuthStore()
+
+// --- 账号与安全：修改密码 ---
+const pwdForm = ref({ oldPassword: '', newPassword: '', confirmPassword: '' })
+const changingPwd = ref(false)
+
+async function handleChangePassword() {
+  const { oldPassword, newPassword, confirmPassword } = pwdForm.value
+  if (!oldPassword || !newPassword) { toast.error('请填写原密码和新密码'); return }
+  if (newPassword.length < 8) { toast.error('新密码至少 8 位'); return }
+  if (newPassword !== confirmPassword) { toast.error('两次输入的新密码不一致'); return }
+  changingPwd.value = true
+  try {
+    await changePassword({ old_password: oldPassword, new_password: newPassword })
+    toast.success('密码已修改')
+    pwdForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
+  } catch (e) {
+    toast.error(e.message || '修改失败')
+  } finally {
+    changingPwd.value = false
+  }
+}
+
+// --- 用户管理（管理员） ---
+const users = ref([])
+const regEnabled = ref(false)
+
+async function loadUsers() {
+  if (!authStore.isAdmin) return
+  try {
+    const [uRes, rRes] = await Promise.all([listUsers(), getRegistrationEnabled()])
+    users.value = uRes.users || []
+    regEnabled.value = !!rRes.enabled
+  } catch (_) { /* 非管理员忽略 */ }
+}
+
+async function handleToggleRegistration() {
+  try {
+    const res = await setRegistrationEnabled(!regEnabled.value)
+    regEnabled.value = !!res.enabled
+    toast.success(res.enabled ? '已开放注册' : '已关闭注册')
+  } catch (e) {
+    toast.error(e.message || '设置失败')
+  }
+}
+
+async function handleDeleteUser(u) {
+  const ok = await toast.confirm(`确定删除用户「${u.username}」吗？\n该用户的所有邮箱账号、邮件等数据将被一并删除，此操作不可恢复。`)
+  if (!ok) return
+  try {
+    await deleteUser(u.id)
+    toast.success('用户已删除')
+    await loadUsers()
+  } catch (e) {
+    toast.error(e.message || '删除失败')
+  }
+}
+
+onMounted(loadUsers)
 
 // --- 版本更新检测 ---
 const {
@@ -1482,4 +1598,14 @@ async function clearCache() {
   padding-left: 0;
 }
 
+
+/* --- 账号与安全 / 用户管理 --- */
+.password-form { display: flex; flex-direction: column; gap: var(--space-md); max-width: 360px; }
+.pwd-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-secondary, #666); }
+.reg-toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+.user-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: var(--space-md); }
+.user-table th, .user-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border-color, #eee); }
+.user-table th { color: var(--text-tertiary, #999); font-weight: 500; }
+.self-badge { color: var(--text-tertiary, #999); font-size: 12px; }
+.empty-hint { color: var(--text-tertiary, #999); font-size: 13px; margin-top: var(--space-md); }
 </style>

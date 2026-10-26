@@ -23,9 +23,9 @@ func NewAccountService(db *gorm.DB, cfg *config.Config) *AccountService {
 	return &AccountService{db: db, config: cfg}
 }
 
-// List 获取所有邮箱账号列表（分页）
+// List 获取当前用户的所有邮箱账号列表（分页）
 // 使用 AccountListDTO 避免 AfterFind 钩子触发密码解密，提升列表查询性能和容错性
-func (s *AccountService) List(page, pageSize int) ([]models.AccountResponse, int64, error) {
+func (s *AccountService) List(userID uint, page, pageSize int) ([]models.AccountResponse, int64, error) {
 	var dtos []models.AccountListDTO
 	var total int64
 
@@ -38,7 +38,7 @@ func (s *AccountService) List(page, pageSize int) ([]models.AccountResponse, int
 
 	offset := (page - 1) * pageSize
 
-	query := s.db.Model(&models.MailAccount{}).Order("created_at DESC")
+	query := s.db.Model(&models.MailAccount{}).Where("user_id = ?", userID).Order("created_at DESC")
 	query.Count(&total)
 
 	// 使用 Select 明确指定字段 + Scan 绕过 MailAccount 的 AfterFind 钩子
@@ -67,10 +67,10 @@ func (s *AccountService) List(page, pageSize int) ([]models.AccountResponse, int
 	return responses, total, nil
 }
 
-// GetByID 根据 ID 获取单个邮箱详情
-func (s *AccountService) GetByID(id uint) (*models.AccountResponse, error) {
+// GetByID 根据 ID 获取单个邮箱详情（限定当前用户）
+func (s *AccountService) GetByID(userID, id uint) (*models.AccountResponse, error) {
 	var account models.MailAccount
-	if err := s.db.First(&account, id).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", id, userID).First(&account).Error; err != nil {
 		return nil, err
 	}
 	resp := s.toResponse(account)
@@ -78,8 +78,9 @@ func (s *AccountService) GetByID(id uint) (*models.AccountResponse, error) {
 }
 
 // Create 创建新邮箱账号
-func (s *AccountService) Create(req models.AccountRequest) (*models.AccountResponse, error) {
+func (s *AccountService) Create(userID uint, req models.AccountRequest) (*models.AccountResponse, error) {
 	account := models.MailAccount{
+		UserID:   userID,
 		Name:     req.Name,
 		Email:    req.Email,
 		Protocol: req.Protocol,
@@ -125,9 +126,9 @@ func (s *AccountService) Create(req models.AccountRequest) (*models.AccountRespo
 }
 
 // Update 更新邮箱账号信息
-func (s *AccountService) Update(id uint, req models.AccountRequest) (*models.AccountResponse, error) {
+func (s *AccountService) Update(userID, id uint, req models.AccountRequest) (*models.AccountResponse, error) {
 	var account models.MailAccount
-	if err := s.db.First(&account, id).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", id, userID).First(&account).Error; err != nil {
 		return nil, err
 	}
 
@@ -190,7 +191,14 @@ func (s *AccountService) Update(id uint, req models.AccountRequest) (*models.Acc
 }
 
 // Delete 删除邮箱账号及其所有邮件数据
-func (s *AccountService) Delete(id uint) error {
+func (s *AccountService) Delete(userID, id uint) error {
+	// 归属校验
+	var cnt int64
+	s.db.Model(&models.MailAccount{}).Where("id = ? AND user_id = ?", id, userID).Count(&cnt)
+	if cnt == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
 	// 先停掉该账号的 Worker
 	if pool := imap.GlobalPool(); pool != nil {
 		pool.StopWorker(id)
@@ -240,9 +248,9 @@ func (s *AccountService) TestConnection(req models.AccountRequest) error {
 }
 
 // SetStatus 设置账号状态（停用/启用）
-func (s *AccountService) SetStatus(id uint, status string) error {
+func (s *AccountService) SetStatus(userID, id uint, status string) error {
 	var account models.MailAccount
-	if err := s.db.First(&account, id).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", id, userID).First(&account).Error; err != nil {
 		return err
 	}
 
@@ -271,14 +279,14 @@ func (s *AccountService) SetStatus(id uint, status string) error {
 }
 
 // TriggerSync 手动触发指定账号的同步
-func (s *AccountService) TriggerSync(id uint) error {
+func (s *AccountService) TriggerSync(userID, id uint) error {
 	pool := imap.GlobalPool()
 	if pool == nil {
 		return ErrWorkerNotRunning
 	}
 
 	var account models.MailAccount
-	if err := s.db.First(&account, id).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", id, userID).First(&account).Error; err != nil {
 		return err
 	}
 

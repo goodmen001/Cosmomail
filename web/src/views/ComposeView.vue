@@ -28,15 +28,28 @@
     <!-- 收件人 -->
     <div class="form-section">
       <label class="form-label">收件人</label>
-      <div class="input-group">
+      <div class="input-group contact-input-wrap">
         <input
           v-model="toInput"
           type="email"
           class="form-input"
           placeholder="多个收件人用逗号分隔，如: a@b.com, c@d.com"
           @keydown.enter.prevent="addToRecipient"
-          @blur="addToRecipient"
+          @blur="onRecipientBlur"
+          @input="onContactInput"
+          @focus="onContactInput"
         />
+        <div v-if="contactSuggestions.length" class="contact-dropdown">
+          <div
+            v-for="ct in contactSuggestions"
+            :key="ct.email"
+            class="contact-item"
+            @mousedown.prevent="pickContact(ct.email)"
+          >
+            <span class="contact-email">{{ ct.email }}</span>
+            <span class="contact-meta">已发 {{ ct.use_count }} 次</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -180,6 +193,7 @@ import { useToast } from '@/composables/useToast'
 const toast = useToast()
 import { sendEmail } from '@/api/mail'
 import { saveDraft, getDraftById } from '@/api/draft'
+import { getContacts } from '@/api/contact'
 
 defineOptions({ name: 'Compose' })
 
@@ -205,6 +219,43 @@ const form = ref({
 const toInput = ref('')
 const ccInput = ref('')
 const bccInput = ref('')
+
+// 联系人（发信收件人记录）
+const contacts = ref([])
+const contactSuggestions = ref([])
+
+async function loadContacts() {
+  try {
+    const res = await getContacts({ limit: 200 })
+    contacts.value = res.contacts || []
+  } catch (e) {
+    // 联系人加载失败不影响写信
+  }
+}
+
+function onContactInput() {
+  const kw = (toInput.value || '').trim().toLowerCase().split(/[,;，；]/).pop().trim()
+  if (!kw) {
+    // 无输入时展示最近联系人（前 8 个）
+    contactSuggestions.value = contacts.value.slice(0, 8).filter(ct => !form.value.to.includes(ct.email))
+    return
+  }
+  contactSuggestions.value = contacts.value
+    .filter(ct => ct.email.includes(kw) && !form.value.to.includes(ct.email))
+    .slice(0, 8)
+}
+
+function pickContact(email) {
+  if (!form.value.to.includes(email)) form.value.to.push(email)
+  toInput.value = ''
+  contactSuggestions.value = []
+}
+
+function onRecipientBlur() {
+  addToRecipient()
+  // 延迟收起下拉，让 mousedown 选择事件先触发
+  setTimeout(() => { contactSuggestions.value = [] }, 150)
+}
 
 const showCc = ref(false)
 const useHtmlMode = ref(false)
@@ -639,4 +690,36 @@ onActivated(() => {
   .compose-header { flex-direction: rows; gap: 12px; align-items: flex-start; }
   .btn-lg { width: 100%; justify-content: center; }
 }
+
+.contact-input-wrap { position: relative; }
+
+.contact-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  margin-top: 4px;
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.contact-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.contact-item:hover { background: var(--bg-hover, #f5f5f5); }
+
+.contact-email { color: var(--text-primary, #333); }
+
+.contact-meta { color: var(--text-tertiary, #999); font-size: 12px; }
 </style>

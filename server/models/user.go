@@ -5,11 +5,12 @@ package models
 
 import "time"
 
-// User 用户模型（单用户模式）
+// User 用户模型（多用户模式）
 type User struct {
 	ID           uint      `json:"id" gorm:"primaryKey"`
 	Username     string    `json:"username" gorm:"uniqueIndex;size:64;not null"`
 	PasswordHash string    `json:"-" gorm:"size:255;not null;column:password_hash"` // bcrypt 哈希，不序列化输出
+	IsAdmin      bool      `json:"is_admin" gorm:"default:false;not null;column:is_admin;comment:是否管理员"` // 首个注册用户自动成为管理员
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
@@ -38,10 +39,12 @@ type RegisterRequest struct {
 type LoginResponse struct {
 	Token    string `json:"token"`
 	Username string `json:"username"`
+	IsAdmin  bool   `json:"is_admin"`
 }
 
-// AuthStatusResponse 认证状态响应（用于判断是否需要注册）
+// AuthStatusResponse 认证状态响应（用于判断是否需要注册/是否允许注册）
 type AuthStatusResponse struct {
-	SetupRequired bool   `json:"setup_required"` // true = 需要注册（尚无用户）
-	Message       string `json:"message"`
+	SetupRequired       bool   `json:"setup_required"`        // true = 需要注册（尚无任何用户）
+	RegistrationEnabled bool   `json:"registration_enabled"`  // 管理员是否开放了注册
+	Message             string `json:"message"`
 }

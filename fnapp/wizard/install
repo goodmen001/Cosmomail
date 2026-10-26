@@ -21,6 +21,13 @@
             "message": "请输入 10 到 65535 之间的端口"
           }
         ]
+      },
+      {
+        "type": "text",
+        "field": "wizard_data_dir",
+        "label": "数据目录（可选，便于备份，默认为应用数据目录）",
+        "initValue": "",
+        "rules": []
       }
     ]
   }

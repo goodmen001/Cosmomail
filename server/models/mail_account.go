@@ -19,6 +19,7 @@ import (
 // 通过 GORM 钩子实现写入时自动加密、读取时自动解密，业务层无需关心。
 type MailAccount struct {
 	ID           uint       `json:"id" gorm:"primaryKey"`
+	UserID       uint       `json:"-" gorm:"index;not null;default:0;comment:所属用户ID(数据隔离)"`
 	Name         string     `json:"name" gorm:"type:varchar(100);not null;comment:显示名称"`
 	Email        string     `json:"email" gorm:"type:varchar(255);not null;uniqueIndex;comment:邮箱地址"`
 	Protocol     string     `json:"protocol" gorm:"type:varchar(10);not null;default:'imap';comment:邮件协议(imap/pop3)"`
@@ -182,6 +183,8 @@ var smtpHostMap = map[string]string{
 	"imap.qq.com":          "smtp.qq.com",
 	"imap.sina.com":        "smtp.sina.com",
 	"imap.aliyun.com":      "smtp.aliyun.com",
+	"imap.qiye.aliyun.com": "smtp.qiye.aliyun.com",
+	"pop.qiye.aliyun.com":  "smtp.qiye.aliyun.com",
 	"imap.gmail.com":       "smtp.gmail.com",
 	"imap.mail.yahoo.com":  "smtp.mail.yahoo.com",
 	"outlook.office365.com": "smtp.office365.com",
@@ -194,6 +197,7 @@ var smtpPortMap = map[string]int{
 	"smtp.qq.com":            465,
 	"smtp.sina.com":          465,
 	"smtp.aliyun.com":        465,
+	"smtp.qiye.aliyun.com":   465,
 	"smtp.mail.yahoo.com":    465,
 	"smtp.office365.com":     587, // Outlook使用STARTTLS
 	"smtp.gmail.com":         587, // Gmail使用STARTTLS

@@ -2,7 +2,14 @@
 
 LOG_FILE="${TRIM_PKGVAR}/cosmomail.log"
 PID_FILE="${TRIM_PKGVAR}/cosmomail.pid"
+# 自定义数据目录（安装/设置向导填写，保存在 etc/data_dir；为空则使用应用数据目录）
 DATA_DIR="${TRIM_PKGVAR}/data"
+if [ -r "${TRIM_PKGETC}/data_dir" ]; then
+    CUSTOM_DATA_DIR="$(head -n 1 "${TRIM_PKGETC}/data_dir" | tr -d '[:space:]')"
+    case "${CUSTOM_DATA_DIR}" in
+        /*) DATA_DIR="${CUSTOM_DATA_DIR}" ;;
+    esac
+fi
 APP_BIN="${TRIM_APPDEST}/server/cosmomail"
 PORT_FILE="${TRIM_PKGETC}/port"
 APP_PORT="${wizard_port:-${TRIM_SERVICE_PORT:-8800}}"
@@ -55,6 +62,7 @@ start_process() {
         export COSMOMAIL_HOST=0.0.0.0
         export COSMOMAIL_PORT="${APP_PORT}"
         export COSMOMAIL_DSN="${DATA_DIR}/cosmomail.db"
+        export COSMOMAIL_DATA_DIR="${DATA_DIR}"
         exec "${APP_BIN}"
     ) >> "${LOG_FILE}" 2>&1 &
 

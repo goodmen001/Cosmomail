@@ -115,14 +115,14 @@
               </button>
 
               <button v-if="canRegister" class="mode-button" type="button" @click="switchToRegister">
-                首次使用？创建管理员账号
+                {{ authStore.setupRequired ? '首次使用？创建管理员账号' : '没有账号？注册新用户' }}
               </button>
             </form>
           </div>
 
           <div v-else key="register" class="form-panel">
             <header class="form-header">
-              <p class="form-eyebrow">FIRST LAUNCH</p>
+              <p class="form-eyebrow">{{ authStore.setupRequired ? 'FIRST LAUNCH' : 'SIGN UP' }}</p>
               <h2>创建管理员账号</h2>
               <p>完成初始化后，就可以添加你的邮箱</p>
             </header>
@@ -233,7 +233,8 @@ const usernameInput = ref(null)
 const passwordInput = ref(null)
 
 const isRegister = ref(authStore.setupRequired)
-const canRegister = computed(() => authStore.setupRequired)
+// 可注册：系统未初始化（首位用户=管理员）或管理员已开放注册
+const canRegister = computed(() => authStore.setupRequired || authStore.registrationEnabled)
 
 function switchToRegister() {
   isRegister.value = true

@@ -155,10 +155,23 @@ const showPwd = ref(false)
 const localForm = reactive({ ...props.formData })
 watch(() => props.formData, (val) => Object.assign(localForm, val), { deep: true })
 
+// 协议切换时应用对应的服务商预设（如阿里企业邮的 IMAP/POP3 收信服务器不同）
+watch(() => localForm.protocol, (proto) => {
+  const p = props.selectedProvider
+  if (!p) return
+  if (proto === 'pop3' && p.popPreset) {
+    Object.assign(localForm, p.popPreset)
+    localForm.protocol = proto
+  } else if (proto === 'imap' && p.preset) {
+    Object.assign(localForm, p.preset)
+    localForm.protocol = proto
+  }
+})
+
 // Provider 判断
 const isDomesticProvider = computed(() => {
   const key = props.selectedProvider?.key
-  return ['qq', '163', '126', 'sina', 'aliyun', 'yahoo', 'gmail'].includes(key)
+  return ['qq', '163', '126', 'sina', 'aliyun', 'aliyun_qiye', 'yahoo', 'gmail'].includes(key)
 })
 
 const isOAuth2Provider = computed(() => {

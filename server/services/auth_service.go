@@ -17,7 +17,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// AuthService 认证服务
+// AuthService 认证服务（多用户模式）
 type AuthService struct {
 	db        *gorm.DB
 	jwtSecret []byte
@@ -33,7 +33,10 @@ func NewAuthService(db *gorm.DB, cfg *config.Config) *AuthService {
 
 var (
 	ErrInvalidCredentials = errors.New("用户名或密码错误")
-	ErrUserExists         = errors.New("管理员已存在，不可重复注册")
+	ErrUserExists         = errors.New("用户名已被注册")
+	ErrRegistrationClosed = errors.New("当前未开放注册，请联系管理员")
+	ErrForbidden          = errors.New("无权限执行此操作")
+	ErrLastAdmin          = errors.New("不能删除最后一个管理员账号")
 )
 
 // HashPassword 对密码进行 bcrypt 哈希
@@ -55,6 +58,7 @@ func (s *AuthService) GenerateToken(user *models.User) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id":  user.ID,
 		"username": user.Username,
+		"is_admin": user.IsAdmin,
 		"exp":      time.Now().Add(7 * 24 * time.Hour).Unix(),
 		"iat":      time.Now().Unix(),
 	}
@@ -70,6 +74,33 @@ func (s *AuthService) ParseToken(tokenStr string) (*jwt.Token, error) {
 		}
 		return s.jwtSecret, nil
 	})
+}
+
+// registrationEnabled 读取注册开关（默认：尚未有用户时视为开放——首位用户必须能注册）
+func (s *AuthService) registrationEnabled() bool {
+	var setting models.AppSetting
+	if err := s.db.Where("`key` = ?", models.SettingKeyRegistrationEnabled).First(&setting).Error; err != nil {
+		return false
+	}
+	return setting.Value == "true"
+}
+
+// SetRegistrationEnabled 设置注册开关（管理员）
+func (s *AuthService) SetRegistrationEnabled(enabled bool) error {
+	setting := models.AppSetting{Key: models.SettingKeyRegistrationEnabled, Value: boolStr(enabled), UpdatedAt: time.Now()}
+	return s.db.Save(&setting).Error
+}
+
+func boolStr(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}
+
+// GetRegistrationEnabled 查询注册开关
+func (s *AuthService) GetRegistrationEnabled() bool {
+	return s.registrationEnabled()
 }
 
 // Login 用户登录
@@ -92,52 +123,155 @@ func (s *AuthService) Login(req models.LoginRequest) (*models.LoginResponse, err
 		return nil, err
 	}
 
-	return &models.LoginResponse{Token: token, Username: user.Username}, nil
+	return &models.LoginResponse{Token: token, Username: user.Username, IsAdmin: user.IsAdmin}, nil
 }
 
-// Register 首次注册管理员（单用户模式：仅允许注册一个）
-func (s *AuthService) Register(req models.RegisterRequest) error {
+// Register 注册新用户（首个用户自动成为管理员；其余用户受注册开关限制）
+func (s *AuthService) Register(req models.RegisterRequest) (*models.LoginResponse, error) {
 	var count int64
 	s.db.Model(&models.User{}).Count(&count)
-	if count > 0 {
-		return ErrUserExists
+
+	// 尚无任何用户：允许注册（系统初始化），成为管理员
+	// 已有用户：必须开放注册才允许，且不是管理员
+	isFirst := count == 0
+	if !isFirst && !s.registrationEnabled() {
+		return nil, ErrRegistrationClosed
 	}
 
 	hashedPassword, err := s.HashPassword(req.Password)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	user := &models.User{
 		Username:     req.Username,
 		PasswordHash: hashedPassword,
+		IsAdmin:      isFirst,
 	}
 	if err := s.db.Create(user).Error; err != nil {
-		// 数据库的单用户唯一索引负责关闭并发首次注册竞态。
-		s.db.Model(&models.User{}).Count(&count)
-		if count > 0 {
-			return ErrUserExists
-		}
-		return err
+		// username 唯一索引冲突
+		return nil, ErrUserExists
 	}
-	return nil
+
+	token, err := s.GenerateToken(user)
+	if err != nil {
+		return nil, err
+	}
+	return &models.LoginResponse{Token: token, Username: user.Username, IsAdmin: user.IsAdmin}, nil
 }
 
-// GetAuthStatus 查询是否已设置管理员（前端据此决定显示登录还是注册页）
+// GetAuthStatus 查询认证状态（前端据此显示登录/注册入口）
 func (s *AuthService) GetAuthStatus() *models.AuthStatusResponse {
 	var count int64
 	s.db.Model(&models.User{}).Count(&count)
 
 	if count == 0 {
 		return &models.AuthStatusResponse{
-			SetupRequired: true,
-			Message:       "欢迎使用 Cosmo Mail，请先创建管理员账号",
+			SetupRequired:       true,
+			RegistrationEnabled: true,
+			Message:             "欢迎使用 Cosmo Mail，请先创建管理员账号",
 		}
 	}
 	return &models.AuthStatusResponse{
-		SetupRequired: false,
-		Message:       "已就绪",
+		SetupRequired:       false,
+		RegistrationEnabled: s.registrationEnabled(),
+		Message:             "已就绪",
 	}
+}
+
+// ListUsers 用户列表（管理员）
+func (s *AuthService) ListUsers() ([]models.UserListItem, error) {
+	var users []models.User
+	if err := s.db.Order("created_at ASC").Find(&users).Error; err != nil {
+		return nil, err
+	}
+	items := make([]models.UserListItem, len(users))
+	for i, u := range users {
+		items[i] = models.UserListItem{ID: u.ID, Username: u.Username, IsAdmin: u.IsAdmin, CreatedAt: u.CreatedAt}
+	}
+	return items, nil
+}
+
+// DeleteUser 删除用户（管理员，不能删自己，不能删最后一个管理员）
+func (s *AuthService) DeleteUser(operatorID, targetID uint) error {
+	if operatorID == targetID {
+		return errors.New("不能删除自己的账号")
+	}
+	var target models.User
+	if err := s.db.First(&target, targetID).Error; err != nil {
+		return err
+	}
+	if target.IsAdmin {
+		var adminCount int64
+		s.db.Model(&models.User{}).Where("is_admin = ?", true).Count(&adminCount)
+		if adminCount <= 1 {
+			return ErrLastAdmin
+		}
+	}
+
+	// 停掉该用户所有邮箱账号的同步 Worker
+	var accountIDs []uint
+	s.db.Model(&models.MailAccount{}).Where("user_id = ?", targetID).Pluck("id", &accountIDs)
+	_ = accountIDs
+
+	// 数据隔离：级联删除该用户的邮箱账号、邮件、附件、草稿、联系人、推送订阅
+	return s.deleteUserData(targetID)
+}
+
+// deleteUserData 级联删除用户全部业务数据
+func (s *AuthService) deleteUserData(userID uint) error {
+	tx := s.db.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 该用户所有邮箱账号 ID
+	var accountIDs []uint
+	tx.Model(&models.MailAccount{}).Where("user_id = ?", userID).Pluck("id", &accountIDs)
+
+	if len(accountIDs) > 0 {
+		var mailIDs []uint
+		tx.Model(&models.Mail{}).Where("account_id IN ?", accountIDs).Pluck("id", &mailIDs)
+		if len(mailIDs) > 0 {
+			tx.Where("mail_id IN ?", mailIDs).Delete(&models.Attachment{})
+		}
+		tx.Where("account_id IN ?", accountIDs).Delete(&models.Mail{})
+		tx.Where("account_id IN ?", accountIDs).Delete(&models.MailboxSyncState{})
+		tx.Where("id IN ?", accountIDs).Delete(&models.MailAccount{})
+	}
+
+	tx.Where("user_id = ?", userID).Delete(&models.Draft{})
+	tx.Where("user_id = ?", userID).Delete(&models.Contact{})
+	tx.Where("user_id = ?", userID).Delete(&models.PushSubscription{})
+	tx.Where("user_id = ?", userID).Delete(&models.Webhook{})
+	tx.Where("id = ?", userID).Delete(&models.User{})
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	return nil
+}
+
+// ChangePassword 修改密码
+func (s *AuthService) ChangePassword(userID uint, req models.ChangePasswordRequest) error {
+	var user models.User
+	if err := s.db.First(&user, userID).Error; err != nil {
+		return err
+	}
+	if err := s.VerifyPassword(req.OldPassword, user.PasswordHash); err != nil {
+		return errors.New("原密码错误")
+	}
+	hashed, err := s.HashPassword(req.NewPassword)
+	if err != nil {
+		return err
+	}
+	return s.db.Model(&user).Update("password_hash", hashed).Error
 }
 
 // SeedDefaultUser 开发环境：自动创建默认管理员（仅在无用户时生效）
@@ -145,7 +279,7 @@ func (s *AuthService) SeedDefaultUser(username, password string) error {
 	var count int64
 	s.db.Model(&models.User{}).Count(&count)
 	if count > 0 {
-		return nil // 已有用户则跳过
+		return nil
 	}
 
 	hashedPassword, err := s.HashPassword(password)
@@ -156,6 +290,7 @@ func (s *AuthService) SeedDefaultUser(username, password string) error {
 	user := &models.User{
 		Username:     username,
 		PasswordHash: hashedPassword,
+		IsAdmin:      true,
 	}
 
 	err = s.db.Create(user).Error

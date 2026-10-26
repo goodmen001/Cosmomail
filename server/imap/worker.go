@@ -66,6 +66,7 @@ var idleVerifiedServers = map[string]bool{
 var pollingOnlyServers = map[string]bool{
 	"imap.qq.com":        true,
 	"imap.exmail.qq.com": true,
+	"imap.qiye.aliyun.com": true, // 阿里企业邮 - 保守使用轮询
 }
 
 // idleLearnedUnsupported 运行时学习到的、已确认不支持IDLE的服务器（全局共享）
