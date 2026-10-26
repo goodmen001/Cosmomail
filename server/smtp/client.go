@@ -13,7 +13,11 @@ import (
 	"time"
 
 	"cosmomail/models"
+	"cosmomail/oauth2"
+	"cosmomail/oauth2token"
 	"cosmomail/proxy"
+
+	"gorm.io/gorm"
 )
 
 // SendRequest 发送邮件请求
@@ -33,14 +37,32 @@ type SendResult struct {
 }
 
 // SendMail 通过指定账号的 SMTP 服务器发送邮件
-func SendMail(account *models.MailAccount, req *SendRequest) (*SendResult, error) {
+// 支持两种认证方式：
+//   - OAuth2（Outlook/Gmail 等）：XOAUTH2 SASL，Token 过期自动刷新并持久化
+//   - 密码认证：PLAIN SASL
+func SendMail(account *models.MailAccount, req *SendRequest, db *gorm.DB) (*SendResult, error) {
 	smtpHost := getSMTPHost(account)
 	smtpPort := getSMTPPort(account)
 
 	addr := net.JoinHostPort(smtpHost, strconv.Itoa(smtpPort))
 
 	// 构建认证信息
-	auth := smtp.PlainAuth("", account.Username, account.Password, smtpHost)
+	var auth smtp.Auth
+	if oauth2.IsOAuth2Account(account.AuthType) {
+		accessToken := oauth2token.ResolveAccessToken(db, account)
+		if accessToken == "" {
+			return nil, fmt.Errorf("无法获取有效的 OAuth2 AccessToken（可能需要重新授权）")
+		}
+		auth = &xoauth2SMTPAuth{
+			username: account.Email,
+			token:    accessToken,
+		}
+	} else {
+		if account.Password == "" {
+			return nil, fmt.Errorf("该邮箱账号未设置密码，无法发送邮件")
+		}
+		auth = smtp.PlainAuth("", account.Username, account.Password, smtpHost)
+	}
 
 	// 构建邮件内容（RFC822 格式）
 	from := account.Email
@@ -324,4 +346,25 @@ func getSMTPPort(account *models.MailAccount) int {
 		return account.SmtpPort
 	}
 	return 587 // 默认 STARTTLS 端口
+}
+
+// xoauth2SMTPAuth 实现 net/smtp 的 Auth 接口，使用 XOAUTH2 SASL 机制
+// 微软 Outlook SMTP (smtp-mail.outlook.com / smtp.office365.com) 仅支持 XOAUTH2，
+// 不支持 OAUTHBEARER 与传统密码认证（Basic Auth 已停用）
+type xoauth2SMTPAuth struct {
+	username string
+	token    string
+}
+
+func (a *xoauth2SMTPAuth) Start(server *smtp.ServerInfo) (string, []byte, error) {
+	resp := []byte("user=" + a.username + "\x01auth=Bearer " + a.token + "\x01\x01")
+	return "XOAUTH2", resp, nil
+}
+
+func (a *xoauth2SMTPAuth) Next(fromServer []byte, more bool) ([]byte, error) {
+	if !more {
+		return nil, nil
+	}
+	// XOAUTH2 认证失败时服务器返回 JSON 错误挑战，返回空响应以中止
+	return []byte{}, nil
 }

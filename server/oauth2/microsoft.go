@@ -25,8 +25,8 @@ const (
 
 	// Microsoft 授权范围（用户委托流程必须使用 outlook.office.com，不能用 outlook.office365.com）
 	// 参考: https://learn.microsoft.com/en-us/exchange/client-developer/legacy-protocols/how-to-authenticate-an-imap-pop-smtp-application-by-using-oauth
-	microsoftIMAPScope   = "https://outlook.office.com/IMAP.AccessAsUser.All"
-	microsoftSMTPScope   = "https://outlook.office.com/SMTP.Send"
+	microsoftIMAPScope    = "https://outlook.office.com/IMAP.AccessAsUser.All"
+	microsoftSMTPScope    = "https://outlook.office.com/SMTP.Send"
 	microsoftOfflineScope = "offline_access" // 获取 Refresh Token
 )
 

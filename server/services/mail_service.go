@@ -104,7 +104,7 @@ func (s *MailService) List(filter models.MailListFilter) ([]models.MailListItem,
 		sortBy = "mails.sent_at"
 	}
 
- sortOrder := "DESC"
+	sortOrder := "DESC"
 	if strings.ToUpper(filter.SortOrder) == "ASC" {
 		sortOrder = "ASC"
 	}
@@ -168,9 +168,9 @@ func (s *MailService) GetByID(id uint) (*models.MailResponse, error) {
 		AccountID:     mail.AccountID,
 		Folder:        mail.Folder,
 		MessageID:     mail.MessageID,
-		From:         mail.From,
-		To:           mail.To,
-		Cc:           mail.Cc,
+		From:          mail.From,
+		To:            mail.To,
+		Cc:            mail.Cc,
 		Subject:       mail.Subject,
 		SentAt:        mail.SentAt,
 		IsRead:        mail.IsRead,
@@ -278,8 +278,8 @@ func (s *MailService) MarkAsStarred(id uint, starred bool) error {
 
 // DeleteResult 删除操作结果
 type DeleteResult struct {
-	Success        bool   `json:"success"`
-	DeletedFromServer bool `json:"deleted_from_server"` // 是否成功从源服务器删除
+	Success           bool   `json:"success"`
+	DeletedFromServer bool   `json:"deleted_from_server"`           // 是否成功从源服务器删除
 	ServerDeleteError string `json:"server_delete_error,omitempty"` // 源服务器删除错误信息（如有）
 }
 
@@ -331,10 +331,10 @@ func (s *MailService) Delete(id uint) *DeleteResult {
 
 // BatchDeleteResult 批量删除操作结果
 type BatchDeleteResult struct {
-	Success           bool   `json:"success"`
-	Deleted           int64  `json:"deleted"`
-	Failed            []uint `json:"failed"`
-	ServerSyncResult  map[uint]*DeleteResult `json:"server_sync_result,omitempty"` // 每封邮件的同步删除状态
+	Success          bool                   `json:"success"`
+	Deleted          int64                  `json:"deleted"`
+	Failed           []uint                 `json:"failed"`
+	ServerSyncResult map[uint]*DeleteResult `json:"server_sync_result,omitempty"` // 每封邮件的同步删除状态
 }
 
 // BatchDelete 批量删除邮件
@@ -538,11 +538,7 @@ func (s *MailService) SendMail(req smtp.SendRequest) (*smtp.SendResult, error) {
 		return nil, fmt.Errorf("邮箱账号不存在 (ID=%d)", req.AccountID)
 	}
 
-	if account.Password == "" {
-		return nil, fmt.Errorf("该邮箱账号未设置密码，无法发送邮件")
-	}
-
-	return smtp.SendMail(&account, &req)
+	return smtp.SendMail(&account, &req, s.db)
 }
 
 // SaveSentMail 保存已发送邮件到数据库

@@ -8,10 +8,10 @@ import "time"
 // DeviceCodeResponse 设备码授权响应（返回给前端）
 type DeviceCodeResponse struct {
 	DeviceCode      string        `json:"device_code"`
-	UserCode        string        `json:"user_code"`         // 用户输入的短验证码，如 "ABCD-EFGH"
-	VerificationURI string        `json:"verification_uri"`  // 用户打开的链接
+	UserCode        string        `json:"user_code"`        // 用户输入的短验证码，如 "ABCD-EFGH"
+	VerificationURI string        `json:"verification_uri"` // 用户打开的链接
 	ExpiresIn       time.Duration `json:"expires_in"`       // 设备码有效期
-	Interval        time.Duration `json:"interval"`          // 轮询间隔（秒）
+	Interval        time.Duration `json:"interval"`         // 轮询间隔（秒）
 }
 
 // TokenResponse OAuth2 Token 响应
