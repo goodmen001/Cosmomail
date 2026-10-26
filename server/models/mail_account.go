@@ -31,7 +31,7 @@ type MailAccount struct {
 
 	// --- OAuth2 字段（可选，为空时走传统密码认证）---
 	AuthType        string     `json:"auth_type" gorm:"type:varchar(20);default:'';comment:认证类型(password/oauth2_microsoft/oauth2_google)"`
-	OAuthProvider    string     `json:"oauth_provider" gorm:"type:varchar(30);default:'';comment:OAuth2服务商(microsoft/google)"`
+	OAuthProvider    string     `json:"oauth_provider" gorm:"column:oauth_provider;type:varchar(30);default:'';comment:OAuth2服务商(microsoft/google)"`
 	RefreshToken    string     `json:"-" gorm:"type:text;comment:OAuth2 Refresh Token(AES-256-GCM加密存储)"`
 	CustomClientId  string     `json:"-" gorm:"type:text;comment:用户自定义OAuth2 Client ID(AES-256-GCM加密存储,为空则使用默认值)"`
 	TokenExpiresAt  *time.Time `json:"token_expires_at" gorm:"comment:Access Token 过期时间"`
