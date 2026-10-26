@@ -39,8 +39,11 @@ services:
 
 完整列表见 [环境变量文档](../docs/config/environment.md)。
 
-> ⚠️ **重要**：未显式设置 `COSMOMAIL_ENCRYPT_KEY` 时密钥随容器重建而变化，
-> 已保存的邮箱密码和 OAuth2 Refresh Token 将无法解密。生产部署务必固定密钥。
+> 💡 **密钥说明**：未设置 `COSMOMAIL_JWT_SECRET` / `COSMOMAIL_ENCRYPT_KEY` 时，
+> 首次启动会自动生成随机密钥并持久化到数据库（`/app/data/cosmomail.db`），
+> 容器重建但数据卷保留时密钥不丢失。仅当**删除数据卷**时才会重新生成，
+> 届时已保存的邮箱密码和 OAuth2 Refresh Token 需要重新录入/授权。
+> 生产环境如需多实例共享密钥，建议显式设置这两个环境变量。
 
 ## Outlook 发件（OAuth2）
 

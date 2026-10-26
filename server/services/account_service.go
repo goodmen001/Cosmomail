@@ -47,6 +47,7 @@ func (s *AccountService) List(page, pageSize int) ([]models.AccountResponse, int
 		"id", "name", "email", "protocol", "imap_host", "port",
 		"smtp_host", "smtp_port", "username",
 		"password", // 仅检查是否为空，不解密
+		"auth_type", "oauth_provider", "token_expires_at",
 		"proxy_enabled", "proxy_url", "sync_mode", "sync_days",
 		"delete_on_server", "last_sync_at", "status", "error_msg",
 		"created_at", "updated_at",
@@ -300,6 +301,9 @@ func (s *AccountService) dtoToResponse(dto models.AccountListDTO) models.Account
 		SmtpPort:       dto.SmtpPort,
 		Username:       dto.Username,
 		HasPassword:    dto.HasPassword(),
+		AuthType:       dto.AuthType,
+		OAuthProvider:  dto.OAuthProvider,
+		TokenExpiresAt: dto.TokenExpiresAt,
 		ProxyEnabled:   dto.ProxyEnabled,
 		ProxyURL:       dto.ProxyURL,
 		SyncMode:       dto.SyncMode,

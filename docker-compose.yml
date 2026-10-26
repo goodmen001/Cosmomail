@@ -17,7 +17,7 @@ services:
       COSMOMAIL_DSN: /app/data/cosmomail.db
       TZ: ${TZ:-Asia/Shanghai}
 
-      # 安全配置（生产环境强烈建议显式设置）
+      # 安全配置（可选：首次启动自动生成并持久化到数据库）
       # JWT 签名密钥，用于登录会话
       # COSMOMAIL_JWT_SECRET: change-me-to-a-long-random-string
       # 敏感字段（密码/Token）AES-256-GCM 加密密钥

@@ -60,3 +60,45 @@ jobs:
             APP_VERSION=${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  build-fnos:
+    # 构建飞牛 fnOS 安装包（fpk），tag 推送时发布到 Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Build linux-amd64 binary
+        run: |
+          cd web && pnpm install --frozen-lockfile && pnpm build && cd ..
+          mkdir -p server/embedfs/dist && cp -r server/dist/* server/embedfs/dist/
+          VERSION=$(node -p "require('./version.json').latest.replace(/^v/,'')")
+          cd server && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+            go build -trimpath \
+            -ldflags "-s -w -X cosmomail/buildinfo.Version=${VERSION} -X main.isProduction=true" \
+            -o ../bin/cosmomail-linux-amd64 .
+
+      - name: Build fnOS package
+        run: ./build-fnos.sh bin/cosmomail-linux-amd64
+
+      - name: Upload fpk to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: fnapp/CosmoMail-fnOS-x86_64-*.fpk

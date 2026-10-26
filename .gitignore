@@ -65,3 +65,6 @@ Thumbs.db
 .dev-pids/
 **/.pnpm-store
 **/tmp
+
+# fnOS packaging tools
+.tools/
