@@ -17,3 +17,28 @@ export function login(data) {
 export function register(data) {
   return request.post('/auth/register', data, { timeout: 10000 })
 }
+
+/** 查询注册开关 */
+export function getRegistrationEnabled() {
+  return request.get('/auth/registration-enabled')
+}
+
+/** 修改自己的密码 */
+export function changePassword(data) {
+  return request.put('/auth/change-password', data)
+}
+
+/** 用户列表（管理员） */
+export function listUsers() {
+  return request.get('/admin/users')
+}
+
+/** 删除用户（管理员） */
+export function deleteUser(id) {
+  return request.delete(`/admin/users/${id}`)
+}
+
+/** 设置注册开关（管理员） */
+export function setRegistrationEnabled(enabled) {
+  return request.put('/admin/registration-enabled', { enabled })
+}

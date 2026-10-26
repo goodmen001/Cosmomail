@@ -121,6 +121,10 @@ function onSelectProvider(provider) {
   // 预填充服务商预设配置
   if (provider.preset) {
     Object.assign(formData, provider.preset)
+    // 提供商带 POP3 备选预设且用户已选 POP3 协议时，使用 POP 预设
+    if (provider.popPreset && formData.protocol === 'pop3') {
+      Object.assign(formData, provider.popPreset)
+    }
   } else if (provider.key === '__manual__') {
     // 手动配置：清空服务器预填值，让用户自行填写
     formData.host = ''

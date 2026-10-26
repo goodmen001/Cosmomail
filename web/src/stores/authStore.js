@@ -9,6 +9,8 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('cosmomail-token') || '')
   const username = ref('')
   const setupRequired = ref(false)
+  const registrationEnabled = ref(false)
+  const isAdmin = ref(false)
   const initialized = ref(false)
 
   const isLoggedIn = computed(() => !!token.value)
@@ -17,9 +19,11 @@ export const useAuthStore = defineStore('auth', () => {
     if (token.value) {
       // 有 token 时验证是否有效（清库/过期等场景）
       try {
-        const res = await authApi.getAuthStatus()
-        // token 有效，更新用户名
-        username.value = parseUsername(token.value) || ''
+        await authApi.getAuthStatus()
+        // token 有效，更新用户名（isAdmin 从 JWT payload 解析）
+        const payload = parsePayload(token.value)
+        username.value = payload.username || ''
+        isAdmin.value = !!payload.is_admin
       } catch (_) {
         // token 无效（401 / 后端已重置等），清除并标记需要重新登录
         logout()
@@ -28,6 +32,7 @@ export const useAuthStore = defineStore('auth', () => {
       try {
         const res = await authApi.getAuthStatus()
         setupRequired.value = res.setup_required
+        registrationEnabled.value = !!res.registration_enabled
       } catch (_) {
         setupRequired.value = true
       }
@@ -38,6 +43,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function doLogin(loginData) {
     const res = await authApi.login(loginData)
     setToken(res.token, res.username)
+    isAdmin.value = !!res.is_admin
     return res
   }
 
@@ -45,6 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
     const res = await authApi.register(regData)
     if (res.token) {
       setToken(res.token, res.username)
+      isAdmin.value = !!res.is_admin
     }
     return res
   }
@@ -55,9 +62,17 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('cosmomail-token', newToken || '')
   }
 
+  // 从 JWT payload 解析完整信息（纯前端解析）
+  function parsePayload(jwtStr) {
+    try {
+      return JSON.parse(atob(jwtStr.split('.')[1]))
+    } catch { return {} }
+  }
+
   function logout() {
     token.value = ''
     username.value = ''
+    isAdmin.value = false
     localStorage.removeItem('cosmomail-token')
   }
 
@@ -70,7 +85,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    token, username, isLoggedIn, setupRequired, initialized,
+    token, username, isLoggedIn, setupRequired, registrationEnabled, isAdmin, initialized,
     init, doLogin, doRegister, logout,
   }
 })
