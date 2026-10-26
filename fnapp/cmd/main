@@ -51,10 +51,17 @@ start_process() {
         return 0
     fi
 
-    mkdir -p "${DATA_DIR}"
-    chmod 700 "${DATA_DIR}"
-    chmod +x "${APP_BIN}"
-    log_msg "Starting Cosmo Mail on port ${APP_PORT}"
+    # 自定义数据目录必须可写（应用以低权限用户运行）；不可写时回退到默认目录，
+    # 避免数据库/附件无法创建导致应用启动失败
+    if ! mkdir -p "${DATA_DIR}" 2>/dev/null || ! touch "${DATA_DIR}/.write_test" 2>/dev/null; then
+        log_msg "数据目录 ${DATA_DIR} 不可写，回退到默认目录 ${TRIM_PKGVAR}/data"
+        DATA_DIR="${TRIM_PKGVAR}/data"
+        mkdir -p "${DATA_DIR}" 2>/dev/null
+    fi
+    rm -f "${DATA_DIR}/.write_test" 2>/dev/null
+    chmod 700 "${DATA_DIR}" 2>/dev/null
+    chmod +x "${APP_BIN}" 2>/dev/null
+    log_msg "Starting Cosmo Mail on port ${APP_PORT} (data dir: ${DATA_DIR})"
 
     (
         cd "${TRIM_PKGVAR}" || exit 1
@@ -67,7 +74,15 @@ start_process() {
     ) >> "${LOG_FILE}" 2>&1 &
 
     printf '%s' "$!" > "${PID_FILE}"
-    sleep 1
+    # 首次启动需完成数据库迁移，等待最长 15 秒确认进程存活
+    local count=0
+    while [ "${count}" -lt 15 ]; do
+        if status; then
+            return 0
+        fi
+        sleep 1
+        count=$((count + 1))
+    done
     if ! status; then
         log_msg "Cosmo Mail failed to start"
         return 1
