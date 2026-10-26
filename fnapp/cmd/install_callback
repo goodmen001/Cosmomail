@@ -30,10 +30,13 @@ if [ -n "${DATA_DIR}" ]; then
             exit 1
             ;;
     esac
-    mkdir -p "${DATA_DIR}" 2>/dev/null && touch "${DATA_DIR}/.write_test" 2>/dev/null && rm -f "${DATA_DIR}/.write_test" 2>/dev/null || {
-        echo "无法创建数据目录 ${DATA_DIR}（权限不足）。请选择应用数据目录下已有的目录，或留空使用默认目录" > "${TRIM_TEMP_LOGFILE}"
-        exit 1
-    }
+    if ! mkdir -p "${DATA_DIR}" 2>/dev/null || ! touch "${DATA_DIR}/.write_test" 2>/dev/null || ! rm -f "${DATA_DIR}/.write_test" 2>/dev/null; then
+        # 目录不可写（fnOS 共享文件夹的"任意用户可读写"不包含应用服务账号）。
+        # 不阻断安装，回退到默认数据目录，保证应用一定能装上。
+        echo "数据目录 ${DATA_DIR} 不可写，已自动改用默认数据目录（安装可继续）" > "${TRIM_TEMP_LOGFILE}"
+        DATA_DIR=""
+        rm -f "${TRIM_PKGETC}/data_dir"
+    fi
 fi
 mkdir -p "${TRIM_PKGETC}"
 printf '%s\n' "${PORT}" > "${TRIM_PKGETC}/port"
