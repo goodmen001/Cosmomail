@@ -438,6 +438,7 @@
 defineOptions({ name: 'Settings' })
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from '@/stores/appStore'
+import { useAuthStore } from '@/stores/authStore'
 import { PRESET_COLORS, POLL_INTERVAL_OPTIONS, PAGE_SIZE_OPTIONS } from '@/stores/appStore'
 import { useSSE } from '@/composables/useSSE'
 import { useToast } from '@/composables/useToast'
