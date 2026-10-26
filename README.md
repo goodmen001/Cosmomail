@@ -12,6 +12,30 @@ Cosmo Mail 使用 Go、SQLite 和 Vue 3 构建，支持 IMAP IDLE、UID 增量�
 
 ## 快速部署
 
+### Docker Compose（推荐）
+
+```bash
+git clone https://github.com/qwernot/Cosmomail.git
+cd Cosmomail
+docker compose up -d
+```
+
+或直接使用 GHCR 预构建镜像（push/tag 自动构建，支持 amd64/arm64）：
+
+```yaml
+services:
+  cosmomail:
+    image: ghcr.io/qwernot/cosmomail:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - cosmomail-data:/app/data
+```
+
+详见 [Docker 部署文档](./docs/guide/docker.md)。
+
+### 一键脚本安装
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/qwernot/Cosmomail/main/deploy.sh | sudo bash
 ```
