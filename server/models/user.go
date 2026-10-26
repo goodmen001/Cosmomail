@@ -11,6 +11,8 @@ type User struct {
 	Username     string    `json:"username" gorm:"uniqueIndex;size:64;not null"`
 	PasswordHash string    `json:"-" gorm:"size:255;not null;column:password_hash"` // bcrypt 哈希，不序列化输出
 	IsAdmin      bool      `json:"is_admin" gorm:"default:false;not null;column:is_admin;comment:是否管理员"` // 首个注册用户自动成为管理员
+	Disabled     bool      `json:"disabled" gorm:"default:false;not null;column:disabled;comment:是否被禁用"` // 禁用后无法登录，API Token 同样失效
+	ApiToken     string    `json:"-" gorm:"size:64;index;column:api_token;comment:外部 API 访问令牌(每用户唯一)"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }

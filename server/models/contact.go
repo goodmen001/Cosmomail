@@ -60,7 +60,28 @@ type UserListItem struct {
 	ID        uint      `json:"id"`
 	Username  string    `json:"username"`
 	IsAdmin   bool      `json:"is_admin"`
+	Disabled  bool      `json:"disabled"`
+	HasToken  bool      `json:"has_token"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+// CreateUserRequest 管理员手动创建用户
+type CreateUserRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	IsAdmin  bool   `json:"is_admin"`
+}
+
+// SetUserDisabledRequest 管理员禁用/启用用户
+type SetUserDisabledRequest struct {
+	Disabled bool `json:"disabled"`
+}
+
+// GotifyConfig 用户的 Gotify 通知配置
+type GotifyConfig struct {
+	Enabled bool   `json:"enabled"`
+	URL     string `json:"url"`
+	Token   string `json:"token"`
 }
 
 // ChangePasswordRequest 修改密码

@@ -65,3 +65,28 @@ func RequireAdmin() fiber.Handler {
 		return c.Next()
 	}
 }
+
+// ApiTokenAuth 外部 API 认证中间件（X-API-Token header，每用户独立 token）
+func ApiTokenAuth(authService *services.AuthService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		tok := c.Get("X-API-Token")
+		if tok == "" {
+			q := c.Query("token")
+			if q == "" {
+				return c.Status(401).JSON(fiber.Map{"error": "未提供 API Token（X-API-Token header）"})
+			}
+			user, err := authService.UserByApiToken(q)
+			if err != nil {
+				return c.Status(401).JSON(fiber.Map{"error": err.Error()})
+			}
+			c.Locals("user_id", user.ID)
+			return c.Next()
+		}
+		user, err := authService.UserByApiToken(tok)
+		if err != nil {
+			return c.Status(401).JSON(fiber.Map{"error": err.Error()})
+		}
+		c.Locals("user_id", user.ID)
+		return c.Next()
+	}
+}

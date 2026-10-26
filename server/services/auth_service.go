@@ -4,10 +4,14 @@
 package services
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"cosmomail/config"
 	"cosmomail/models"
@@ -142,6 +146,9 @@ func (s *AuthService) Login(req models.LoginRequest) (*models.LoginResponse, err
 	if err := s.VerifyPassword(req.Password, user.PasswordHash); err != nil {
 		return nil, ErrInvalidCredentials
 	}
+	if user.Disabled {
+		return nil, errors.New("账号已被禁用，请联系管理员")
+	}
 
 	token, err := s.GenerateToken(&user)
 	if err != nil {
@@ -233,9 +240,57 @@ func (s *AuthService) ListUsers() ([]models.UserListItem, error) {
 	}
 	items := make([]models.UserListItem, len(users))
 	for i, u := range users {
-		items[i] = models.UserListItem{ID: u.ID, Username: u.Username, IsAdmin: u.IsAdmin, CreatedAt: u.CreatedAt}
+		items[i] = models.UserListItem{ID: u.ID, Username: u.Username, IsAdmin: u.IsAdmin, Disabled: u.Disabled, HasToken: u.ApiToken != "", CreatedAt: u.CreatedAt}
 	}
 	return items, nil
+}
+
+// CreateUser 管理员手动创建用户（不受注册开关限制）
+func (s *AuthService) CreateUser(req models.CreateUserRequest) (*models.UserListItem, error) {
+	req.Username = strings.TrimSpace(req.Username)
+	if utf8.RuneCountInString(req.Username) < 3 || utf8.RuneCountInString(req.Username) > 32 {
+		return nil, errors.New("用户名长度应为 3–32 个字符")
+	}
+	if len(req.Password) < 8 || len(req.Password) > 72 {
+		return nil, errors.New("密码长度应为 8–72 字节")
+	}
+	hashed, err := s.HashPassword(req.Password)
+	if err != nil {
+		return nil, err
+	}
+	user := &models.User{Username: req.Username, PasswordHash: hashed, IsAdmin: req.IsAdmin}
+	if err := s.db.Create(user).Error; err != nil {
+		return nil, ErrUserExists
+	}
+	log.Printf("👤 管理员创建了用户 %s", user.Username)
+	return &models.UserListItem{ID: user.ID, Username: user.Username, IsAdmin: user.IsAdmin, CreatedAt: user.CreatedAt}, nil
+}
+
+// SetUserDisabled 管理员禁用/启用用户（不能禁用自己、不能禁用最后一个管理员）
+func (s *AuthService) SetUserDisabled(operatorID, targetID uint, disabled bool) error {
+	if operatorID == targetID && disabled {
+		return errors.New("不能禁用自己的账号")
+	}
+	var target models.User
+	if err := s.db.First(&target, targetID).Error; err != nil {
+		return errors.New("用户不存在")
+	}
+	if disabled && target.IsAdmin {
+		var adminCount int64
+		s.db.Model(&models.User{}).Where("is_admin = ? AND disabled = ?", true, false).Count(&adminCount)
+		if adminCount <= 1 {
+			return ErrLastAdmin
+		}
+	}
+	if err := s.db.Model(&target).Update("disabled", disabled).Error; err != nil {
+		return err
+	}
+	if disabled {
+		log.Printf("🚫 管理员禁用了用户 %s", target.Username)
+	} else {
+		log.Printf("✅ 管理员启用了用户 %s", target.Username)
+	}
+	return nil
 }
 
 // DeleteUser 删除用户（管理员，不能删自己，不能删最后一个管理员）
@@ -296,7 +351,6 @@ func (s *AuthService) deleteUserData(userID uint) error {
 	tx.Where("user_id = ?", userID).Delete(&models.PushSubscription{})
 	tx.Where("user_id = ?", userID).Delete(&models.Webhook{})
 	tx.Where("id = ?", userID).Delete(&models.User{})
-
 	if err := tx.Commit().Error; err != nil {
 		tx.Rollback()
 		return err
@@ -359,3 +413,56 @@ func (s *AuthService) SeedDefaultUser(username, password string) error {
 
 // _ = fmt 用于开发日志输出
 var _ = fmt.Sprintf
+
+// ---- API Token（外部 AI / 脚本读取邮件用）----
+
+// generateApiToken 生成 32 字节随机 hex token
+func generateApiToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+}
+
+// EnsureApiToken 获取当前用户的 API Token；无则生成
+func (s *AuthService) EnsureApiToken(userID uint) (string, error) {
+	var user models.User
+	if err := s.db.First(&user, userID).Error; err != nil {
+		return "", errors.New("用户不存在")
+	}
+	if user.Disabled {
+		return "", errors.New("账号已被禁用")
+	}
+	if user.ApiToken != "" {
+		return user.ApiToken, nil
+	}
+	tok, err := generateApiToken()
+	if err != nil {
+		return "", err
+	}
+	if err := s.db.Model(&user).Update("api_token", tok).Error; err != nil {
+		return "", err
+	}
+	return tok, nil
+}
+
+// RevokeApiToken 吊销当前用户的 API Token
+func (s *AuthService) RevokeApiToken(userID uint) error {
+	return s.db.Model(&models.User{}).Where("id = ?", userID).Update("api_token", "").Error
+}
+
+// UserByApiToken 按 API Token 查用户（外部 API 认证用；禁用用户视为无效）
+func (s *AuthService) UserByApiToken(token string) (*models.User, error) {
+	if len(token) < 32 {
+		return nil, errors.New("无效的 API Token")
+	}
+	var user models.User
+	if err := s.db.Where("api_token = ?", token).First(&user).Error; err != nil {
+		return nil, errors.New("无效的 API Token")
+	}
+	if user.Disabled {
+		return nil, errors.New("账号已被禁用")
+	}
+	return &user, nil
+}

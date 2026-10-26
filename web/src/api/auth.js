@@ -47,3 +47,38 @@ export function deleteUser(id) {
 export function setRegistrationEnabled(enabled) {
   return request.put('/admin/registration-enabled', { enabled })
 }
+
+/** 创建用户（管理员） */
+export function createUser(data) {
+  return request.post('/admin/users', data)
+}
+
+/** 禁用/启用用户（管理员） */
+export function setUserDisabled(id, disabled) {
+  return request.put(`/admin/users/${id}/disabled`, disabled)
+}
+
+/** 获取（或首次生成）当前用户 API Token */
+export function getApiToken() {
+  return request.get('/auth/api-token')
+}
+
+/** 吊销当前用户 API Token */
+export function revokeApiToken() {
+  return request.delete('/auth/api-token')
+}
+
+/** 获取 Gotify 通知配置 */
+export function getGotifyConfig() {
+  return request.get('/auth/gotify')
+}
+
+/** 保存 Gotify 通知配置 */
+export function saveGotifyConfig(data) {
+  return request.put('/auth/gotify', data)
+}
+
+/** 发送 Gotify 测试通知 */
+export function testGotify(data) {
+  return request.post('/auth/gotify/test', data)
+}

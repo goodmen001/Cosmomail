@@ -157,3 +157,57 @@ func (h *AuthHandler) ChangePassword(c *fiber.Ctx) error {
 	}
 	return c.JSON(fiber.Map{"success": true, "message": "密码已修改"})
 }
+
+// CreateUser 管理员手动创建用户
+func (h *AuthHandler) CreateUser(c *fiber.Ctx) error {
+	var req models.CreateUserRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "请求参数解析失败"})
+	}
+	item, err := h.service.CreateUser(req)
+	if err != nil {
+		status := 400
+		if err == services.ErrUserExists {
+			status = 409
+		}
+		return c.Status(status).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.Status(201).JSON(item)
+}
+
+// SetUserDisabled 管理员禁用/启用用户
+func (h *AuthHandler) SetUserDisabled(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "无效的 ID"})
+	}
+	var req models.SetUserDisabledRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "请求参数解析失败"})
+	}
+	if err := h.service.SetUserDisabled(currentUserID(c), uint(id), req.Disabled); err != nil {
+		status := 400
+		if err == services.ErrForbidden || strings.Contains(err.Error(), "自己") {
+			status = 403
+		}
+		return c.Status(status).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"success": true})
+}
+
+// GetApiToken 获取（或首次生成）当前用户 API Token
+func (h *AuthHandler) GetApiToken(c *fiber.Ctx) error {
+	tok, err := h.service.EnsureApiToken(currentUserID(c))
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"token": tok})
+}
+
+// RevokeApiToken 吊销当前用户 API Token
+func (h *AuthHandler) RevokeApiToken(c *fiber.Ctx) error {
+	if err := h.service.RevokeApiToken(currentUserID(c)); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "吊销失败"})
+	}
+	return c.JSON(fiber.Map{"success": true})
+}

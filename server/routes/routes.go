@@ -67,6 +67,7 @@ func Register(app *fiber.App, db *gorm.DB) {
 	draftHandler := handlers.NewDraftHandler(services.NewDraftService(db))
 	pushHandler := handlers.NewPushHandler(pushService)
 	contactHandler := handlers.NewContactHandler(mailService)
+	externalHandler := handlers.NewExternalApiHandler(mailService)
 
 	// 认证中间件实例
 	authMiddleware := middleware.AuthRequired(authService)
@@ -98,8 +99,33 @@ func Register(app *fiber.App, db *gorm.DB) {
 	adminGroup := protected.Group("/admin")
 	adminGroup.Use(adminMiddleware)
 	adminGroup.Get("/users", authHandler.ListUsers)
+	adminGroup.Post("/users", authHandler.CreateUser)
+	adminGroup.Put("/users/:id/disabled", authHandler.SetUserDisabled)
 	adminGroup.Delete("/users/:id", authHandler.DeleteUser)
 	adminGroup.Put("/registration-enabled", authHandler.SetRegistrationEnabled)
+
+	// ============================================================
+	//  API Token 管理（当前用户）
+	// ============================================================
+	userGroup.Get("/api-token", authHandler.GetApiToken)
+	userGroup.Delete("/api-token", authHandler.RevokeApiToken)
+
+	// ============================================================
+	//  Gotify 通知配置（当前用户）
+	// ============================================================
+	gotifyHandler := handlers.NewGotifyHandler(services.NewGotifyService(db))
+	userGroup.Get("/gotify", gotifyHandler.Get)
+	userGroup.Put("/gotify", gotifyHandler.Save)
+	userGroup.Post("/gotify/test", gotifyHandler.Test)
+
+	// ============================================================
+	//  外部只读邮件 API（X-API-Token 认证，供外部 AI / 脚本读取邮件）
+	// ============================================================
+	external := api.Group("/external")
+	external.Use(middleware.ApiTokenAuth(authService))
+	external.Get("/mails", externalHandler.ListMails)
+	external.Get("/mails/stats", externalHandler.GetStats)
+	external.Get("/mails/:id", externalHandler.GetMail)
 
 	// ============================================================
 	//  联系人 API（发信收件人记录，供写信时选择）

@@ -4,7 +4,10 @@
 package imap
 
 import (
+	"bytes"
 	"crypto/tls"
+	"encoding/json"
+	"net/http"
 	"fmt"
 	"log"
 	"net"
@@ -502,11 +505,55 @@ func (w *AccountWorker) notifyNewMails(count int, syncedIDs []uint) {
 
 	// 发送 Web Push 离线推送通知（通过 notifier 包桥接，避免循环依赖）
 	notifier.SendPushNotification(
-		1,
+		w.account.UserID,
 		fmt.Sprintf("📧 您有 %d 封新邮件", count),
 		fmt.Sprintf("来自 %s", w.account.Email),
 		map[string]interface{}{"account_id": w.account.ID},
 	)
+
+	// 发送 Gotify 通知（按账号所属用户读取配置）
+	subject, from := "(无主题)", "未知发件人"
+	if len(mailList) > 0 {
+		if s, ok := mailList[0]["subject"].(string); ok && s != "" {
+			subject = s
+		}
+		if s, ok := mailList[0]["from"].(string); ok && s != "" {
+			from = s
+		}
+	}
+	notifyGotify(w.db, w.account.UserID,
+		fmt.Sprintf("📧 新邮件: %.60s", subject),
+		fmt.Sprintf("来自 %s\n账号 %s", from, w.account.Email))
+}
+
+// notifyGotify 异步推送 Gotify 通知（读取用户配置，未启用时静默跳过）
+func notifyGotify(db *gorm.DB, userID uint, title, body string) {
+	var setting models.AppSetting
+	if err := db.Where("`key` = ?", fmt.Sprintf("gotify_config_%d", userID)).First(&setting).Error; err != nil {
+		return
+	}
+	var cfg models.GotifyConfig
+	if err := json.Unmarshal([]byte(setting.Value), &cfg); err != nil || !cfg.Enabled || cfg.URL == "" || cfg.Token == "" {
+		return
+	}
+	go func() {
+		url := strings.TrimSuffix(strings.TrimSpace(cfg.URL), "/")
+		if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+			url = "https://" + url
+		}
+		payload, _ := json.Marshal(map[string]interface{}{"title": title, "message": body, "priority": 5})
+		resp, err := http.Post(url+"/message?token="+cfg.Token, "application/json", bytes.NewReader(payload))
+		if err != nil {
+			log.Printf("[Gotify] 推送失败 (userID=%d): %v", userID, err)
+			return
+		}
+		resp.Body.Close()
+		if resp.StatusCode >= 300 {
+			log.Printf("[Gotify] 推送失败 (userID=%d): HTTP %d", userID, resp.StatusCode)
+		} else {
+			log.Printf("[Gotify] ✓ 推送成功 (userID=%d)", userID)
+		}
+	}()
 }
 
 // isIMAP 判断当前账号是否为 IMAP 协议

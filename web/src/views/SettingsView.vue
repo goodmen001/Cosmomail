@@ -343,6 +343,9 @@
             <h3 class="section-title">用户管理</h3>
             <p class="section-desc">管理注册用户，控制是否开放注册</p>
           </div>
+          <div>
+            <button class="btn btn-secondary btn-sm" style="margin-right:8px" @click="showCreateUser = true">添加用户</button>
+          </div>
           <label class="reg-toggle">
             <input type="checkbox" :checked="regEnabled" @change="handleToggleRegistration" />
             <span>开放注册</span>
@@ -350,14 +353,21 @@
         </div>
         <table class="user-table">
           <thead>
-            <tr><th>用户名</th><th>角色</th><th>注册时间</th><th></th></tr>
+            <tr><th>用户名</th><th>角色</th><th>状态</th><th>注册时间</th><th></th></tr>
           </thead>
           <tbody>
-            <tr v-for="u in users" :key="u.id">
+            <tr v-for="u in users" :key="u.id" :style="u.disabled ? 'opacity:0.5' : ''">
               <td>{{ u.username }} <span v-if="u.username === authStore.username" class="self-badge">（我）</span></td>
               <td>{{ u.is_admin ? '管理员' : '普通用户' }}</td>
+              <td><span :class="u.disabled ? 'badge badge-danger' : 'badge badge-success'">{{ u.disabled ? '已禁用' : '正常' }}</span></td>
               <td>{{ formatTime(u.created_at) }}</td>
               <td>
+                <button
+                  v-if="u.username !== authStore.username"
+                  class="btn btn-secondary btn-sm"
+                  style="margin-right:8px"
+                  @click="handleToggleDisabled(u)"
+                >{{ u.disabled ? '启用' : '禁用' }}</button>
                 <button
                   v-if="u.username !== authStore.username"
                   class="btn btn-danger btn-sm"
@@ -368,6 +378,79 @@
           </tbody>
         </table>
         <p v-if="users.length === 0" class="empty-hint">暂无用户</p>
+
+        <!-- 添加用户对话框 -->
+        <div v-if="showCreateUser" class="webhook-modal-overlay" @click.self="showCreateUser = false">
+          <div class="webhook-modal" style="width:min(420px,90vw)">
+            <h3 class="section-title" style="margin-bottom:12px">添加用户</h3>
+            <div class="form-field">
+              <label>用户名（3–32 字符）</label>
+              <input v-model="createUserForm.username" type="text" autocomplete="off" />
+            </div>
+            <div class="form-field">
+              <label>密码（至少 8 位）</label>
+              <input v-model="createUserForm.password" type="password" autocomplete="new-password" />
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <input v-model="createUserForm.is_admin" type="checkbox" />
+              <span>设为管理员</span>
+            </label>
+            <div class="setting-actions">
+              <button class="btn btn-secondary btn-sm" @click="showCreateUser = false">取消</button>
+              <button class="btn btn-primary btn-sm" :disabled="creatingUser" @click="handleCreateUser">{{ creatingUser ? '创建中...' : '创建' }}</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- API Token：供外部 AI / 脚本读取邮件 -->
+      <section class="settings-section card">
+        <h3 class="section-title">API Token</h3>
+        <p class="section-desc">供外部 AI / 脚本读取你的邮件。使用时在请求头加 <code>X-API-Token</code>。</p>
+        <template v-if="apiToken">
+          <div class="api-token-box">
+            <code>{{ tokenVisible }}</code>
+            <button class="btn btn-secondary btn-sm" @click="showToken = !showToken">{{ showToken ? '隐藏' : '显示' }}</button>
+            <button class="btn btn-secondary btn-sm" @click="copyToken">复制</button>
+          </div>
+          <div class="setting-actions" style="margin-top:8px">
+            <button class="btn btn-danger btn-sm" @click="handleRevokeToken">吊销 Token</button>
+          </div>
+        </template>
+        <template v-else>
+          <div class="setting-actions">
+            <button class="btn btn-primary btn-sm" :disabled="loadingToken" @click="handleGetToken">{{ loadingToken ? '生成中...' : '生成 API Token' }}</button>
+          </div>
+        </template>
+        <details style="margin-top:12px">
+          <summary style="cursor:pointer;color:var(--text-secondary)">接口说明</summary>
+          <pre style="font-size:12px;background:var(--bg-secondary);padding:10px;border-radius:8px;overflow:auto">GET /api/v1/external/mails?folder=inbox&page=1&page_size=20
+GET /api/v1/external/mails/:id      # 邮件全文（正文/附件）
+GET /api/v1/external/mails/stats    # 统计
+Header: X-API-Token: &lt;你的token&gt;</pre>
+        </details>
+      </section>
+
+      <!-- Gotify 新邮件通知 -->
+      <section class="settings-section card">
+        <h3 class="section-title">Gotify 通知</h3>
+        <p class="section-desc">收到新邮件时推送到你的 Gotify 服务器</p>
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <input v-model="gotifyForm.enabled" type="checkbox" />
+          <span>启用 Gotify 通知</span>
+        </label>
+        <div class="form-field">
+          <label>Gotify 服务器地址（如 https://push.example.com）</label>
+          <input v-model="gotifyForm.url" type="text" placeholder="https://push.example.com" />
+        </div>
+        <div class="form-field">
+          <label>应用 Token（Gotify 应用管理页创建）</label>
+          <input v-model="gotifyForm.token" type="text" :placeholder="gotifyConfigured ? '已保存（留空保持不变）' : 'Cxxxxxx'" />
+        </div>
+        <div class="setting-actions">
+          <button class="btn btn-secondary btn-sm" :disabled="testingGotify" @click="handleTestGotify">{{ testingGotify ? '发送中...' : '发送测试' }}</button>
+          <button class="btn btn-primary btn-sm" :disabled="savingGotify" @click="handleSaveGotify">{{ savingGotify ? '保存中...' : '保存' }}</button>
+        </div>
       </section>
 
       <!-- 关于信息 -->
@@ -476,6 +559,9 @@ async function handleChangePassword() {
 // --- 用户管理（管理员） ---
 const users = ref([])
 const regEnabled = ref(false)
+const showCreateUser = ref(false)
+const creatingUser = ref(false)
+const createUserForm = ref({ username: '', password: '', is_admin: false })
 
 async function loadUsers() {
   if (!authStore.isAdmin) return
@@ -485,6 +571,127 @@ async function loadUsers() {
     regEnabled.value = !!rRes.enabled
   } catch (_) { /* 非管理员忽略 */ }
 }
+
+async function handleCreateUser() {
+  const { username, password } = createUserForm.value
+  if (!username || !password) { toast.error('请填写用户名和密码'); return }
+  creatingUser.value = true
+  try {
+    await createUser({ username, password, is_admin: createUserForm.value.is_admin })
+    toast.success(`用户 ${username} 已创建`)
+    showCreateUser.value = false
+    createUserForm.value = { username: '', password: '', is_admin: false }
+    loadUsers()
+  } catch (e) {
+    toast.error(e.message || '创建失败')
+  } finally {
+    creatingUser.value = false
+  }
+}
+
+async function handleToggleDisabled(u) {
+  const disabling = !u.disabled
+  if (disabling) {
+    const ok = await toast.confirm(`确定禁用用户「${u.username}」吗？\n禁用后该用户将无法登录，其 API Token 也会失效。`)
+    if (!ok) return
+  }
+  try {
+    await setUserDisabled(u.id, { disabled: disabling })
+    toast.success(disabling ? '已禁用' : '已启用')
+    loadUsers()
+  } catch (e) {
+    toast.error(e.message || '操作失败')
+  }
+}
+
+// --- API Token（外部 AI 读取邮件） ---
+const apiToken = ref('')
+const showToken = ref(false)
+const loadingToken = ref(false)
+const tokenVisible = computed(() => {
+  if (showToken.value) return apiToken.value
+  return apiToken.value.slice(0, 4) + '••••••••••••••••••••••••' + apiToken.value.slice(-4)
+})
+
+async function handleGetToken() {
+  loadingToken.value = true
+  try {
+    const res = await getApiToken()
+    apiToken.value = res.token
+  } catch (e) {
+    toast.error(e.message || '获取失败')
+  } finally {
+    loadingToken.value = false
+  }
+}
+
+async function handleRevokeToken() {
+  const ok = await toast.confirm('确定吊销 API Token 吗？\n所有使用该 Token 的外部程序将立即失去访问权限。')
+  if (!ok) return
+  try {
+    await revokeApiToken()
+    apiToken.value = ''
+    toast.success('API Token 已吊销')
+  } catch (e) {
+    toast.error(e.message || '吊销失败')
+  }
+}
+
+async function copyToken() {
+  try {
+    await navigator.clipboard.writeText(apiToken.value)
+    toast.success('已复制到剪贴板')
+  } catch {
+    toast.error('复制失败，请手动复制')
+  }
+}
+
+// --- Gotify 通知 ---
+const gotifyForm = ref({ enabled: false, url: '', token: '' })
+const gotifyConfigured = ref(false)
+const savingGotify = ref(false)
+const testingGotify = ref(false)
+
+async function loadGotify() {
+  try {
+    const res = await getGotifyConfig()
+    gotifyForm.value.enabled = !!res.enabled
+    gotifyForm.value.url = res.url || ''
+    gotifyConfigured.value = !!res.configured
+    if (!res.configured) gotifyForm.value.token = ''
+  } catch { /* 忽略 */ }
+}
+
+async function handleSaveGotify() {
+  if (gotifyForm.value.enabled && (!gotifyForm.value.url || (!gotifyForm.value.token && !gotifyConfigured.value))) {
+    toast.error('启用前请填写 Gotify 地址和应用 Token')
+    return
+  }
+  savingGotify.value = true
+  try {
+    await saveGotifyConfig({ enabled: gotifyForm.value.enabled, url: gotifyForm.value.url.trim(), token: gotifyForm.value.token.trim() })
+    toast.success('Gotify 配置已保存')
+    gotifyForm.value.token = ''
+    loadGotify()
+  } catch (e) {
+    toast.error(e.message || '保存失败')
+  } finally {
+    savingGotify.value = false
+  }
+}
+
+async function handleTestGotify() {
+  testingGotify.value = true
+  try {
+    await testGotify({ url: gotifyForm.value.url.trim(), token: gotifyForm.value.token.trim() })
+    toast.success('测试消息已发送，请到 Gotify 客户端查看')
+  } catch (e) {
+    toast.error(e.message || '测试失败')
+  } finally {
+    testingGotify.value = false
+  }
+}
+
 
 async function handleToggleRegistration() {
   try {
@@ -508,7 +715,7 @@ async function handleDeleteUser(u) {
   }
 }
 
-onMounted(loadUsers)
+onMounted(() => { loadUsers(); loadGotify() })
 
 // --- 版本更新检测 ---
 const {
@@ -1282,6 +1489,18 @@ async function clearCache() {
   white-space: nowrap;
 }
 .badge-success { background: var(--success-light); color: var(--success); }
+.badge-danger { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+
+.api-token-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  overflow: auto;
+}
+.api-token-box code { flex: 1; font-size: 12px; word-break: break-all; }
 .badge-default { background: var(--bg-hover); color: var(--text-tertiary); }
 .badge-success-light { background: rgba(16,185,129,0.08); color: #059669; }
 .badge-error-light { background: var(--error-light); color: #dc2626; }
