@@ -10,7 +10,12 @@ set -euo pipefail
 BINARY_PATH="${1:-bin/cosmomail-linux-amd64}"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_DIR="${PROJECT_ROOT}/fnapp"
-FNPACK_VERSION="1.2.1"
+# 版本号自动从 version.json 读取（单一版本源）
+FNPACK_VERSION="$(sed -n 's/.*"latest": *"v\([0-9.]*\)".*/\1/p' version.json | head -n1)"
+if [ -z "${FNPACK_VERSION}" ]; then
+    echo "✗ 无法从 version.json 读取版本号"
+    exit 1
+fi
 
 # 检查二进制
 if [ ! -f "${PROJECT_ROOT}/${BINARY_PATH}" ]; then
