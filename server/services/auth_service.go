@@ -25,10 +25,35 @@ type AuthService struct {
 
 // NewAuthService 创建认证服务实例
 func NewAuthService(db *gorm.DB, cfg *config.Config) *AuthService {
-	return &AuthService{
+	s := &AuthService{
 		db:        db,
 		jwtSecret: []byte(cfg.Security.JWTSecret),
 	}
+	s.ensureAtLeastOneAdmin()
+	return s
+}
+
+// ensureAtLeastOneAdmin 修复历史遗留问题：早期版本注册的用户均无管理员身份，
+// 而用户管理功能仅对管理员可见、注册关闭后也无法产生新管理员，形成死锁。
+// 启动时若系统中没有任何管理员，则把最早注册的用户提升为管理员。
+func (s *AuthService) ensureAtLeastOneAdmin() {
+	var adminCount int64
+	if err := s.db.Model(&models.User{}).Where("is_admin = ?", true).Count(&adminCount).Error; err != nil {
+		log.Printf("[WARN] 检查管理员数量失败: %v", err)
+		return
+	}
+	if adminCount > 0 {
+		return
+	}
+	var first models.User
+	if err := s.db.Order("created_at ASC").First(&first).Error; err != nil {
+		return // 尚无任何用户，首个注册者会自动成为管理员
+	}
+	if err := s.db.Model(&first).Update("is_admin", true).Error; err != nil {
+		log.Printf("[WARN] 提升管理员失败 (%s): %v", first.Username, err)
+		return
+	}
+	log.Printf("✅ 系统中无管理员，已将最早注册的用户 %s 提升为管理员（请重新登录生效）", first.Username)
 }
 
 var (
