@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"cosmomail/config"
 	"cosmomail/imap"
@@ -28,8 +29,8 @@ func NewMailService(db *gorm.DB, cfg *config.Config) *MailService {
 	return &MailService{db: db, config: cfg}
 }
 
-// List 获取邮件列表（分页、搜索、筛选）
-func (s *MailService) List(filter models.MailListFilter) ([]models.MailListItem, int64, error) {
+// List 获取当前用户的邮件列表（分页、搜索、筛选；按账号归属隔离）
+func (s *MailService) List(userID uint, filter models.MailListFilter) ([]models.MailListItem, int64, error) {
 	var mails []models.Mail
 	var total int64
 
@@ -42,7 +43,9 @@ func (s *MailService) List(filter models.MailListFilter) ([]models.MailListItem,
 		pageSize = 20
 	}
 
-	query := s.db.Model(&models.Mail{}).Joins("LEFT JOIN mail_accounts ON mails.account_id = mail_accounts.id")
+	query := s.db.Model(&models.Mail{}).
+		Joins("LEFT JOIN mail_accounts ON mails.account_id = mail_accounts.id").
+		Where("mail_accounts.user_id = ?", userID)
 
 	// 筛选：指定邮箱账号
 	if filter.AccountID > 0 {
@@ -70,8 +73,10 @@ func (s *MailService) List(filter models.MailListFilter) ([]models.MailListItem,
 		query = query.Where("mails.from LIKE ? OR mails.subject LIKE ?", keyword, keyword)
 	}
 
-	// 统计总数
-	countQuery := s.db.Model(&models.Mail{}).Where("1=1")
+	// 统计总数（同样按用户隔离）
+	countQuery := s.db.Model(&models.Mail{}).
+		Joins("LEFT JOIN mail_accounts ON mails.account_id = mail_accounts.id").
+		Where("mail_accounts.user_id = ?", userID)
 	if filter.AccountID > 0 {
 		countQuery = countQuery.Where("account_id = ?", filter.AccountID)
 	}
@@ -155,11 +160,14 @@ func (s *MailService) List(filter models.MailListFilter) ([]models.MailListItem,
 	return items, total, nil
 }
 
-// GetByID 获取邮件详情（含正文和附件）
-func (s *MailService) GetByID(id uint) (*models.MailResponse, error) {
+// GetByID 获取邮件详情（含正文和附件，限定当前用户）
+func (s *MailService) GetByID(userID, id uint) (*models.MailResponse, error) {
 	var mail models.Mail
 
-	if err := s.db.Preload("Attachments").Preload("Account").First(&mail, id).Error; err != nil {
+	if err := s.db.Preload("Attachments").Preload("Account").
+		Joins("LEFT JOIN mail_accounts ON mails.account_id = mail_accounts.id").
+		Where("mail_accounts.user_id = ?", userID).
+		First(&mail, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -215,8 +223,10 @@ func (s *MailService) GetByID(id uint) (*models.MailResponse, error) {
 }
 
 // MarkAsRead 标记邮件为已读/未读
-func (s *MailService) MarkAsRead(id uint, isRead bool) error {
-	return s.db.Model(&models.Mail{}).Where("id = ?", id).
+func (s *MailService) MarkAsRead(userID, id uint, isRead bool) error {
+	return s.db.Model(&models.Mail{}).
+		Joins("LEFT JOIN mail_accounts ON mails.account_id = mail_accounts.id").
+		Where("mails.id = ? AND mail_accounts.user_id = ?", id, userID).
 		Update("is_read", isRead).Error
 }
 
@@ -228,11 +238,13 @@ type BatchMarkAsReadResult struct {
 }
 
 // BatchMarkAsRead 批量标记邮件已读/未读状态
-func (s *MailService) BatchMarkAsRead(ids []uint, isRead bool) *BatchMarkAsReadResult {
+func (s *MailService) BatchMarkAsRead(userID uint, ids []uint, isRead bool) *BatchMarkAsReadResult {
 	result := &BatchMarkAsReadResult{}
 
-	// 批量更新数据库（使用 IN 查询，一次 SQL 完成）
-	dbResult := s.db.Model(&models.Mail{}).Where("id IN ?", ids).
+	// 批量更新数据库（使用 IN 查询，一次 SQL 完成；限定当前用户的账号）
+	dbResult := s.db.Model(&models.Mail{}).
+		Joins("LEFT JOIN mail_accounts ON mails.account_id = mail_accounts.id").
+		Where("mails.id IN ? AND mail_accounts.user_id = ?", ids, userID).
 		Update("is_read", isRead)
 
 	if dbResult.Error != nil {
@@ -246,8 +258,10 @@ func (s *MailService) BatchMarkAsRead(ids []uint, isRead bool) *BatchMarkAsReadR
 }
 
 // MarkAllAsRead 将符合筛选条件的所有邮件标记为已读
-func (s *MailService) MarkAllAsRead(filter models.MailListFilter) (int64, error) {
-	query := s.db.Model(&models.Mail{})
+func (s *MailService) MarkAllAsRead(userID uint, filter models.MailListFilter) (int64, error) {
+	query := s.db.Model(&models.Mail{}).
+		Joins("LEFT JOIN mail_accounts ON mails.account_id = mail_accounts.id").
+		Where("mail_accounts.user_id = ?", userID)
 
 	if filter.AccountID > 0 {
 		query = query.Where("account_id = ?", filter.AccountID)
@@ -271,8 +285,10 @@ func (s *MailService) MarkAllAsRead(filter models.MailListFilter) (int64, error)
 }
 
 // MarkAsStarred 标记邮件星标
-func (s *MailService) MarkAsStarred(id uint, starred bool) error {
-	return s.db.Model(&models.Mail{}).Where("id = ?", id).
+func (s *MailService) MarkAsStarred(userID, id uint, starred bool) error {
+	return s.db.Model(&models.Mail{}).
+		Joins("LEFT JOIN mail_accounts ON mails.account_id = mail_accounts.id").
+		Where("mails.id = ? AND mail_accounts.user_id = ?", id, userID).
 		Update("is_starred", starred).Error
 }
 
@@ -284,12 +300,14 @@ type DeleteResult struct {
 }
 
 // Delete 删除邮件及其附件，可选同步删除源服务器上的邮件
-func (s *MailService) Delete(id uint) *DeleteResult {
+func (s *MailService) Delete(ownerID, id uint) *DeleteResult {
 	result := &DeleteResult{Success: false}
 
-	// 先获取邮件信息（需要 account_id 和 message_uid）
+	// 先获取邮件信息（需要 account_id 和 message_uid，限定当前用户）
 	var mail models.Mail
-	if err := s.db.First(&mail, id).Error; err != nil {
+	if err := s.db.Joins("LEFT JOIN mail_accounts ON mails.account_id = mail_accounts.id").
+		Where("mail_accounts.user_id = ?", ownerID).
+		First(&mail, id).Error; err != nil {
 		return result // 邮件不存在
 	}
 
@@ -338,13 +356,13 @@ type BatchDeleteResult struct {
 }
 
 // BatchDelete 批量删除邮件
-func (s *MailService) BatchDelete(ids []uint) *BatchDeleteResult {
+func (s *MailService) BatchDelete(userID uint, ids []uint) *BatchDeleteResult {
 	result := &BatchDeleteResult{
 		ServerSyncResult: make(map[uint]*DeleteResult),
 	}
 
 	for _, id := range ids {
-		delResult := s.Delete(id)
+		delResult := s.Delete(userID, id)
 		result.ServerSyncResult[id] = delResult
 
 		if delResult.Success {
@@ -388,14 +406,20 @@ func (s *MailService) deleteFromServer(account *models.MailAccount, mail *models
 	}
 }
 
-// GetStats 获取邮件统计信息
-func (s *MailService) GetStats(accountID *uint) map[string]int64 {
+// GetStats 获取邮件统计信息（限定当前用户的账号）
+func (s *MailService) GetStats(ownerID uint, accountID *uint) map[string]int64 {
 	stats := make(map[string]int64)
 
-	query := s.db.Model(&models.Mail{})
-	if accountID != nil {
-		query = query.Where("account_id = ?", *accountID)
+	userFilter := func(q *gorm.DB) *gorm.DB {
+		q = q.Joins("LEFT JOIN mail_accounts ON mails.account_id = mail_accounts.id").
+			Where("mail_accounts.user_id = ?", ownerID)
+		if accountID != nil {
+			q = q.Where("mails.account_id = ?", *accountID)
+		}
+		return q
 	}
+
+	query := userFilter(s.db.Model(&models.Mail{}))
 
 	var total, unread, withAttachment, starred, sent int64
 
@@ -404,36 +428,19 @@ func (s *MailService) GetStats(accountID *uint) map[string]int64 {
 	stats["total"] = total
 
 	// 已发送
-	sentQuery := s.db.Model(&models.Mail{})
-	if accountID != nil {
-		sentQuery = sentQuery.Where("account_id = ?", *accountID)
-	}
-	sentQuery.Where("folder = 'sent'").Count(&sent)
+	userFilter(s.db.Model(&models.Mail{})).Where("mails.folder = 'sent'").Count(&sent)
 	stats["sent"] = sent
 
 	// 未读数
-	s.db.Model(&models.Mail{}).
-		Where("1=1")
-	if accountID != nil {
-		query.Where("account_id = ?", *accountID)
-	}
-	query.Where("is_read = false").Count(&unread)
+	userFilter(s.db.Model(&models.Mail{})).Where("mails.is_read = false").Count(&unread)
 	stats["unread"] = unread
 
 	// 有附件
-	q := s.db.Model(&models.Mail{})
-	if accountID != nil {
-		q = q.Where("account_id = ?", *accountID)
-	}
-	q.Where("has_attachment = true").Count(&withAttachment)
+	userFilter(s.db.Model(&models.Mail{})).Where("mails.has_attachment = true").Count(&withAttachment)
 	stats["with_attachment"] = withAttachment
 
 	// 已标星
-	q2 := s.db.Model(&models.Mail{})
-	if accountID != nil {
-		q2 = q2.Where("account_id = ?", *accountID)
-	}
-	q2.Where("is_starred = true").Count(&starred)
+	userFilter(s.db.Model(&models.Mail{})).Where("mails.is_starred = true").Count(&starred)
 	stats["starred"] = starred
 
 	return stats
@@ -531,14 +538,66 @@ func stripHTML(html string) string {
 	return strings.TrimSpace(cleaned.String())
 }
 
-// SendMail 发送邮件
-func (s *MailService) SendMail(req smtp.SendRequest) (*smtp.SendResult, error) {
+// SendMail 发送邮件（限定当前用户的账号；成功后记录/去重收件人）
+func (s *MailService) SendMail(ownerID uint, req smtp.SendRequest) (*smtp.SendResult, error) {
 	var account models.MailAccount
-	if err := s.db.First(&account, req.AccountID).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", req.AccountID, ownerID).First(&account).Error; err != nil {
 		return nil, fmt.Errorf("邮箱账号不存在 (ID=%d)", req.AccountID)
 	}
 
-	return smtp.SendMail(&account, &req, s.db)
+	res, err := smtp.SendMail(&account, &req, s.db)
+	if err != nil {
+		return res, err
+	}
+
+	// 记录收件人（去重：按 user_id + email 唯一）
+	s.recordContacts(ownerID, req.AccountID, req.To)
+	return res, nil
+}
+
+// recordContacts 记录发信收件人，存在则累加次数并刷新时间
+func (s *MailService) recordContacts(ownerID, accountID uint, emails []string) {
+	now := time.Now()
+	seen := make(map[string]bool)
+	for _, raw := range emails {
+		email := models.NormalizeEmail(raw)
+		if email == "" || !strings.Contains(email, "@") || seen[email] {
+			continue
+		}
+		seen[email] = true
+
+		var contact models.Contact
+		err := s.db.Where("user_id = ? AND email = ?", ownerID, email).First(&contact).Error
+		if err != nil {
+			contact = models.Contact{
+				UserID: ownerID, Email: email, AccountID: accountID,
+				LastUsedAt: now, UseCount: 1,
+			}
+			if err := s.db.Create(&contact).Error; err != nil {
+				log.Printf("[WARN] 保存联系人失败: %v", err)
+			}
+			continue
+		}
+		s.db.Model(&contact).Updates(map[string]interface{}{
+			"last_used_at": now,
+			"use_count":    contact.UseCount + 1,
+		})
+	}
+}
+
+// ListContacts 获取当前用户的联系人列表（按最近使用排序）
+func (s *MailService) ListContacts(ownerID uint, keyword string, limit int) ([]models.Contact, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	query := s.db.Where("user_id = ?", ownerID)
+	if keyword != "" {
+		kw := "%" + models.NormalizeEmail(keyword) + "%"
+		query = query.Where("email LIKE ?", kw)
+	}
+	var contacts []models.Contact
+	err := query.Order("last_used_at DESC").Limit(limit).Find(&contacts).Error
+	return contacts, err
 }
 
 // SaveSentMail 保存已发送邮件到数据库

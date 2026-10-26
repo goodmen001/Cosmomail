@@ -48,7 +48,20 @@ func AuthRequired(authService *services.AuthService) fiber.Handler {
 
 		c.Locals("user_id", claims["user_id"])
 		c.Locals("username", claims["username"])
+		if isadmin, ok := claims["is_admin"].(bool); ok {
+			c.Locals("is_admin", isadmin)
+		}
 
+		return c.Next()
+	}
+}
+
+// RequireAdmin 管理员权限中间件（须在 AuthRequired 之后使用）
+func RequireAdmin() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		if isadmin, ok := c.Locals("is_admin").(bool); !ok || !isadmin {
+			return c.Status(403).JSON(fiber.Map{"error": "需要管理员权限"})
+		}
 		return c.Next()
 	}
 }

@@ -66,9 +66,11 @@ func Register(app *fiber.App, db *gorm.DB) {
 	authHandler := handlers.NewAuthHandler(authService)
 	draftHandler := handlers.NewDraftHandler(services.NewDraftService(db))
 	pushHandler := handlers.NewPushHandler(pushService)
+	contactHandler := handlers.NewContactHandler(mailService)
 
 	// 认证中间件实例
 	authMiddleware := middleware.AuthRequired(authService)
+	adminMiddleware := middleware.RequireAdmin()
 
 	// ============================================================
 	//  公开接口：无需认证
@@ -78,12 +80,32 @@ func Register(app *fiber.App, db *gorm.DB) {
 	authGroup.Post("/login", authRateLimit, authHandler.Login)
 	authGroup.Post("/register", authRateLimit, authHandler.Register)
 	authGroup.Get("/status", authHandler.Status)
+	authGroup.Get("/registration-enabled", authHandler.GetRegistrationEnabled)
 
 	// ============================================================
 	//  受保护接口：需要 JWT Token
 	// ============================================================
 	protected := api.Group("")
 	protected.Use(authMiddleware)
+
+	// ============================================================
+	//  用户与账号管理 API（需认证）
+	// ============================================================
+	userGroup := protected.Group("/auth")
+	userGroup.Put("/change-password", authHandler.ChangePassword) // 修改自己密码
+
+	adminGroup := protected.Group("/admin")
+	adminGroup.Use(adminMiddleware)
+	adminGroup.Get("/users", authHandler.ListUsers)
+	adminGroup.Delete("/users/:id", authHandler.DeleteUser)
+	adminGroup.Put("/registration-enabled", authHandler.SetRegistrationEnabled)
+
+	// ============================================================
+	//  联系人 API（发信收件人记录，供写信时选择）
+	// ============================================================
+	contacts := protected.Group("/contacts")
+	contacts.Get("", contactHandler.List)
+
 	// ============================================================
 	//  OAuth2 授权 API（设备码流）
 	// ============================================================

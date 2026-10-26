@@ -65,22 +65,18 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "密码长度应为 8–72 字节"})
 	}
 
-	err := h.service.Register(req)
+	result, err := h.service.Register(req)
 	if err != nil {
 		statusCode := 500
 		msg := "注册失败"
 		if err == services.ErrUserExists {
 			statusCode = 409
-			msg = "管理员账号已存在，请直接登录"
+			msg = "用户名已被注册"
+		} else if err == services.ErrRegistrationClosed {
+			statusCode = 403
+			msg = "当前未开放注册，请联系管理员"
 		}
 		return c.Status(statusCode).JSON(fiber.Map{"error": msg, "detail": err.Error()})
-	}
-
-	// 注册成功后自动登录，返回 Token
-	loginReq := models.LoginRequest{Username: req.Username, Password: req.Password}
-	result, loginErr := h.service.Login(loginReq)
-	if loginErr != nil {
-		return c.Status(201).JSON(fiber.Map{"message": "注册成功，请手动登录", "detail": loginErr.Error()})
 	}
 
 	c.Status(201)
@@ -91,4 +87,64 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 func (h *AuthHandler) Status(c *fiber.Ctx) error {
 	status := h.service.GetAuthStatus()
 	return c.JSON(status)
+}
+
+// GetRegistrationEnabled 查询注册开关（公开）
+func (h *AuthHandler) GetRegistrationEnabled(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{"enabled": h.service.GetRegistrationEnabled()})
+}
+
+// SetRegistrationEnabled 管理员切换注册开关
+func (h *AuthHandler) SetRegistrationEnabled(c *fiber.Ctx) error {
+	var req models.RegisterEnabledRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "请求参数解析失败"})
+	}
+	if err := h.service.SetRegistrationEnabled(req.Enabled); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "设置失败", "detail": err.Error()})
+	}
+	return c.JSON(fiber.Map{"success": true, "enabled": req.Enabled})
+}
+
+// ListUsers 用户列表（管理员）
+func (h *AuthHandler) ListUsers(c *fiber.Ctx) error {
+	users, err := h.service.ListUsers()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "查询失败", "detail": err.Error()})
+	}
+	return c.JSON(fiber.Map{"users": users})
+}
+
+// DeleteUser 删除用户（管理员）
+func (h *AuthHandler) DeleteUser(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "无效的 ID"})
+	}
+	operatorID := currentUserID(c)
+	if err := h.service.DeleteUser(operatorID, uint(id)); err != nil {
+		status := 500
+		if err == services.ErrForbidden {
+			status = 403
+		} else if err == services.ErrLastAdmin {
+			status = 400
+		}
+		return c.Status(status).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"success": true, "message": "用户已删除"})
+}
+
+// ChangePassword 修改当前用户密码
+func (h *AuthHandler) ChangePassword(c *fiber.Ctx) error {
+	var req models.ChangePasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "请求参数解析失败"})
+	}
+	if len(req.NewPassword) < 8 || len(req.NewPassword) > 72 {
+		return c.Status(400).JSON(fiber.Map{"error": "新密码长度应为 8–72 字节"})
+	}
+	if err := h.service.ChangePassword(currentUserID(c), req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"success": true, "message": "密码已修改"})
 }

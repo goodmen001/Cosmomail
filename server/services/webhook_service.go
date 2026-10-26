@@ -43,9 +43,9 @@ func (s *WebhookService) TriggerByEvent(event string, data map[string]interface{
 // --- CRUD ---
 
 // List 获取所有 Webhook 列表
-func (s *WebhookService) List() ([]models.WebhookResponse, error) {
+func (s *WebhookService) List(userID uint) ([]models.WebhookResponse, error) {
 	var hooks []models.Webhook
-	if err := s.db.Order("created_at DESC").Find(&hooks).Error; err != nil {
+	if err := s.db.Where("user_id = ?", userID).Order("created_at DESC").Find(&hooks).Error; err != nil {
 		return nil, err
 	}
 	responses := make([]models.WebhookResponse, len(hooks))
@@ -56,9 +56,9 @@ func (s *WebhookService) List() ([]models.WebhookResponse, error) {
 }
 
 // GetByID 获取单个 Webhook 详情
-func (s *WebhookService) GetByID(id uint) (*models.WebhookResponse, error) {
+func (s *WebhookService) GetByID(userID, id uint) (*models.WebhookResponse, error) {
 	var hook models.Webhook
-	if err := s.db.First(&hook, id).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", id, userID).First(&hook).Error; err != nil {
 		return nil, err
 	}
 	resp := s.toResponse(hook)
@@ -66,7 +66,7 @@ func (s *WebhookService) GetByID(id uint) (*models.WebhookResponse, error) {
 }
 
 // Create 创建 Webhook
-func (s *WebhookService) Create(req models.WebhookRequest) (*models.WebhookResponse, error) {
+func (s *WebhookService) Create(userID uint, req models.WebhookRequest) (*models.WebhookResponse, error) {
 	enabled := true
 	if req.Enabled != nil {
 		enabled = *req.Enabled
@@ -76,6 +76,7 @@ func (s *WebhookService) Create(req models.WebhookRequest) (*models.WebhookRespo
 	}
 
 	hook := models.Webhook{
+		UserID:    userID,
 		Name:    req.Name,
 		URL:     req.URL,
 		Events:  req.Events,
@@ -94,9 +95,9 @@ func (s *WebhookService) Create(req models.WebhookRequest) (*models.WebhookRespo
 }
 
 // Update 更新 Webhook
-func (s *WebhookService) Update(id uint, req models.WebhookRequest) (*models.WebhookResponse, error) {
+func (s *WebhookService) Update(userID, id uint, req models.WebhookRequest) (*models.WebhookResponse, error) {
 	var hook models.Webhook
-	if err := s.db.First(&hook, id).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", id, userID).First(&hook).Error; err != nil {
 		return nil, err
 	}
 
@@ -125,8 +126,8 @@ func (s *WebhookService) Update(id uint, req models.WebhookRequest) (*models.Web
 }
 
 // Delete 删除 Webhook
-func (s *WebhookService) Delete(id uint) error {
-	result := s.db.Delete(&models.Webhook{}, id)
+func (s *WebhookService) Delete(userID, id uint) error {
+	result := s.db.Where("id = ? AND user_id = ?", id, userID).Delete(&models.Webhook{})
 	if result.Error != nil {
 		return result.Error
 	}
@@ -139,9 +140,9 @@ func (s *WebhookService) Delete(id uint) error {
 }
 
 // Test 发送测试请求
-func (s *WebhookService) Test(id uint) (*TestResult, error) {
+func (s *WebhookService) Test(userID, id uint) (*TestResult, error) {
 	var hook models.Webhook
-	if err := s.db.First(&hook, id).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", id, userID).First(&hook).Error; err != nil {
 		return nil, err
 	}
 
@@ -270,12 +271,13 @@ func (s *WebhookService) saveLog(webhookID uint, event string, result *TestResul
 }
 
 // GetLogs 获取指定 Webhook 的最近日志
-func (s *WebhookService) GetLogs(webhookID uint, limit int) ([]models.WebhookLog, error) {
+func (s *WebhookService) GetLogs(userID, webhookID uint, limit int) ([]models.WebhookLog, error) {
 	var logs []models.WebhookLog
 	if limit <= 0 || limit > 50 {
 		limit = 20
 	}
-	if err := s.db.Where("webhook_id = ?", webhookID).
+	if err := s.db.Joins("LEFT JOIN webhooks ON webhook_logs.webhook_id = webhooks.id").
+		Where("webhook_logs.webhook_id = ? AND webhooks.user_id = ?", webhookID, userID).
 		Order("created_at DESC").
 		Limit(limit).
 		Find(&logs).Error; err != nil {
