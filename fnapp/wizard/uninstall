@@ -1,0 +1,24 @@
+[
+  {
+    "stepTitle": "卸载 Cosmo Mail",
+    "items": [
+      {
+        "type": "tips",
+        "helpText": "请选择卸载时如何处理邮件数据（数据库、附件）。选择保留后，下次重新安装可继续使用原有邮箱账号和邮件。"
+      },
+      {
+        "type": "radio",
+        "field": "purge_data",
+        "label": "数据处理方式",
+        "initValue": "keep",
+        "options": [
+          { "label": "保留数据（下次安装可继续使用）", "value": "keep" },
+          { "label": "删除全部数据（数据库、附件，不可恢复）", "value": "purge" }
+        ],
+        "rules": [
+          { "required": true, "message": "请选择数据处理方式" }
+        ]
+      }
+    ]
+  }
+]

@@ -1,3 +1,27 @@
 #!/bin/bash
-exit 0
 
+### 卸载前准备：停止应用进程（数据删除在 uninstall_callback 中按用户选择执行）
+
+LOG_FILE="${TRIM_PKGVAR}/cosmomail.log"
+PID_FILE="${TRIM_PKGVAR}/cosmomail.pid"
+
+read_pid() {
+    [ -r "${PID_FILE}" ] || return 1
+    head -n 1 "${PID_FILE}" | tr -d '[:space:]'
+}
+
+# 停止应用（用 PID 文件精确停止，失败则按进程名兜底）
+PID="$(read_pid)"
+if [ -n "${PID}" ] && kill -0 "${PID}" 2>/dev/null; then
+    kill -TERM "${PID}" 2>/dev/null
+    count=0
+    while kill -0 "${PID}" 2>/dev/null && [ "${count}" -lt 10 ]; do
+        sleep 1
+        count=$((count + 1))
+    done
+    kill -KILL "${PID}" 2>/dev/null || true
+fi
+pkill -f "cosmomail" 2>/dev/null || true
+rm -f "${PID_FILE}"
+
+exit 0
