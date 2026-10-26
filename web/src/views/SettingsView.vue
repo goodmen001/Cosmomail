@@ -445,6 +445,7 @@ import { useToast } from '@/composables/useToast'
 import { useUpdateCheck } from '@/composables/useUpdateCheck'
 import { useWebPush } from '@/composables/useWebPush'
 import * as webhookApi from '@/api/webhook'
+import { listUsers, deleteUser, getRegistrationEnabled, setRegistrationEnabled, changePassword } from '@/api/auth'
 import { sendTest as sendTestPush } from '@/api/push'
 
 const toast = useToast()
