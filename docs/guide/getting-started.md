@@ -5,7 +5,7 @@
 Linux 或 macOS：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/qwernot/Cosmomail/main/deploy.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/goodmen001/Cosmomail/main/deploy.sh | sudo bash
 ```
 
 Windows 请下载 Release 中的 `cosmomail.exe` 直接运行。

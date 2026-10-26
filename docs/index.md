@@ -17,7 +17,7 @@ hero:
       link: /guide/features
     - theme: alt
       text: GitHub
-      link: https://github.com/qwernot/Cosmomail
+      link: https://github.com/goodmen001/Cosmomail
 
 features:
   - icon: 🌌
@@ -45,7 +45,7 @@ features:
 ### 1. 下载部署脚本
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/qwernot/Cosmomail/main/deploy.sh -o cosmomail.sh
+curl -fsSL https://raw.githubusercontent.com/goodmen001/Cosmomail/main/deploy.sh -o cosmomail.sh
 chmod +x cosmomail.sh
 ```
 
@@ -83,4 +83,4 @@ cosmomail doctor      # 环境健康检查
 | 通知 | SSE、Web Push、Webhook |
 | 部署 | Linux systemd、macOS、Windows 原生二进制 |
 
-全部源代码、版本发布和问题跟踪都在 [Cosmo Mail GitHub 仓库](https://github.com/qwernot/Cosmomail)。
+全部源代码、版本发布和问题跟踪都在 [Cosmo Mail GitHub 仓库](https://github.com/goodmen001/Cosmomail)。

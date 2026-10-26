@@ -5,7 +5,7 @@ Cosmo Mail 仅提供原生二进制部署，不包含容器或 NAS 专用安装�
 ## 一键安装（Linux / macOS）
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/qwernot/Cosmomail/main/deploy.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/goodmen001/Cosmomail/main/deploy.sh | sudo bash
 ```
 
 安装完成后：
