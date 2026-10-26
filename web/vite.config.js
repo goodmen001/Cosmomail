@@ -12,7 +12,7 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(pkg.version || '0.0.0'),
     __UPDATE_CHECK_URL__: JSON.stringify(
       process.env.UPDATE_CHECK_URL
-      || 'https://raw.githubusercontent.com/qwernot/Cosmomail/main/version.json'
+      || 'https://raw.githubusercontent.com/goodmen001/Cosmomail/main/version.json'
     ),
   },
   plugins: [

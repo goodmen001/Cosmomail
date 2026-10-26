@@ -35,7 +35,7 @@ try {
     Pop-Location
 }
 
-$rawPackage = Join-Path $packageDir "com.qwernot.cosmomail.fpk"
+$rawPackage = Join-Path $packageDir "com.goodmen001.cosmomail.fpk"
 if (-not (Test-Path -LiteralPath $rawPackage)) {
     throw "fnpack did not produce an fpk file"
 }

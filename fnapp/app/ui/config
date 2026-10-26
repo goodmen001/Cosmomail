@@ -1,6 +1,6 @@
 {
   ".url": {
-    "com.qwernot.cosmomail.Application": {
+    "com.goodmen001.cosmomail.Application": {
       "title": "Cosmo Mail",
       "icon": "images/icon-{0}.png",
       "type": "url",

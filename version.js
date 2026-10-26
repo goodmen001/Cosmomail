@@ -28,9 +28,9 @@ const CHANGELOG_PATH = join(ROOT, 'docs', 'guide', 'changelog.md')
 
 // 项目地址配置
 const PROJECT_CONFIG = {
-  githubUrl: 'https://github.com/qwernot/Cosmomail',
-  homepageUrl: 'https://github.com/qwernot/Cosmomail',
-  versionApiUrl: 'https://raw.githubusercontent.com/qwernot/Cosmomail/main/version.json',
+  githubUrl: 'https://github.com/goodmen001/Cosmomail',
+  homepageUrl: 'https://github.com/goodmen001/Cosmomail',
+  versionApiUrl: 'https://raw.githubusercontent.com/goodmen001/Cosmomail/main/version.json',
 }
 
 // ============ 工具函数 ============

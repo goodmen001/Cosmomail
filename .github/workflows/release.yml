@@ -91,7 +91,7 @@ jobs:
           curl -fsSL https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 -o fnpack
           chmod +x fnpack
           (cd fnapp && ../fnpack build)
-          mv fnapp/com.qwernot.cosmomail.fpk "artifacts/CosmoMail-fnOS-x86_64-${GITHUB_REF_NAME}.fpk"
+          mv fnapp/com.goodmen001.cosmomail.fpk "artifacts/CosmoMail-fnOS-x86_64-${GITHUB_REF_NAME}.fpk"
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true

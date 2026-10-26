@@ -45,13 +45,13 @@ export default defineConfig({
     nav: [
       { text: '指南', link: '/guide/getting-started' },
       { text: 'API', link: '/api/overview' },
-      { text: '下载', link: 'https://github.com/qwernot/Cosmomail/releases/latest' },
+      { text: '下载', link: 'https://github.com/goodmen001/Cosmomail/releases/latest' },
       {
         text: '更多',
         items: [
           { text: '开发指南', link: '/dev/overview' },
           { text: '配置参考', link: '/config/environment' },
-          { text: 'GitHub', link: 'https://github.com/qwernot/Cosmomail' },
+          { text: 'GitHub', link: 'https://github.com/goodmen001/Cosmomail' },
           { text: '更新日志', link: '/guide/changelog' },
         ],
       },
@@ -109,11 +109,11 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/qwernot/Cosmomail' },
+      { icon: 'github', link: 'https://github.com/goodmen001/Cosmomail' },
     ],
 
     editLink: {
-      pattern: 'https://github.com/qwernot/Cosmomail/edit/main/docs/:path',
+      pattern: 'https://github.com/goodmen001/Cosmomail/edit/main/docs/:path',
       text: '在 GitHub 上编辑此页',
     },
 
