@@ -20,6 +20,26 @@ if ! command -v ss >/dev/null 2>&1 && command -v netstat >/dev/null 2>&1 \
     echo "端口 ${PORT} 已被占用，请返回并选择其他端口" > "${TRIM_TEMP_LOGFILE}"
     exit 1
 fi
+# 自定义数据目录（可选，绝对路径，便于备份）
+DATA_DIR="${wizard_data_dir// /}"
+if [ -n "${DATA_DIR}" ]; then
+    case "${DATA_DIR}" in
+        /*) ;;
+        *)
+            echo "数据目录必须是绝对路径（以 / 开头）" > "${TRIM_TEMP_LOGFILE}"
+            exit 1
+            ;;
+    esac
+    mkdir -p "${DATA_DIR}" 2>/dev/null || {
+        echo "无法创建数据目录 ${DATA_DIR}" > "${TRIM_TEMP_LOGFILE}"
+        exit 1
+    }
+fi
 mkdir -p "${TRIM_PKGETC}"
 printf '%s\n' "${PORT}" > "${TRIM_PKGETC}/port"
+if [ -n "${DATA_DIR}" ]; then
+    printf '%s\n' "${DATA_DIR}" > "${TRIM_PKGETC}/data_dir"
+else
+    rm -f "${TRIM_PKGETC}/data_dir"
+fi
 exit 0

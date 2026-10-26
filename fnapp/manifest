@@ -1,5 +1,5 @@
 appname=com.goodmen001.cosmomail
-version=1.2.1
+version=1.3.0
 display_name=Cosmo Mail
 desc=简洁、安全的多邮箱统一管理工具，支持 IMAP、POP3、SMTP、实时收信和 Webhook 通知。
 arch=x86_64
