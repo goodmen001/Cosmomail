@@ -148,7 +148,28 @@ func (s *AuthService) Login(req models.LoginRequest) (*models.LoginResponse, err
 		return nil, err
 	}
 
+	// 登录成功时兜底：若系统中没有任何管理员，将当前登录用户提升为管理员。
+	// 覆盖启动自愈（ensureAtLeastOneAdmin）提升的不是当前登录账号的情况。
+	s.ensureAdminFor(&user)
+
 	return &models.LoginResponse{Token: token, Username: user.Username, IsAdmin: user.IsAdmin}, nil
+}
+
+// ensureAdminFor 若系统中没有管理员，则把指定用户提升为管理员并更新其 IsAdmin
+func (s *AuthService) ensureAdminFor(user *models.User) {
+	var adminCount int64
+	if err := s.db.Model(&models.User{}).Where("is_admin = ?", true).Count(&adminCount).Error; err != nil {
+		return
+	}
+	if adminCount > 0 {
+		return
+	}
+	if err := s.db.Model(user).Update("is_admin", true).Error; err != nil {
+		log.Printf("[WARN] 登录时提升管理员失败 (%s): %v", user.Username, err)
+		return
+	}
+	user.IsAdmin = true
+	log.Printf("✅ 系统中无管理员，已将登录用户 %s 提升为管理员", user.Username)
 }
 
 // Register 注册新用户（首个用户自动成为管理员；其余用户受注册开关限制）
