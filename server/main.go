@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"cosmomail/buildinfo"
 	"cosmomail/config"
 	"cosmomail/crypto"
 	"cosmomail/database"
@@ -97,6 +98,8 @@ func main() {
 
 	// 注册 API 路由
 	routes.Register(app, db)
+
+	log.Printf("📦 Cosmo Mail %s 启动，数据目录: %s", buildinfo.Version, cfg.Database.DSN)
 
 	// 初始化 SSE 实时推送服务
 	sse.InitBroker()
