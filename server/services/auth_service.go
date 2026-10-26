@@ -320,6 +320,15 @@ func (s *AuthService) ChangePassword(userID uint, req models.ChangePasswordReque
 	return s.db.Model(&user).Update("password_hash", hashed).Error
 }
 
+// Me 返回当前登录用户的实时信息（含数据库中的 is_admin，避免旧 JWT 里的过期身份）
+func (s *AuthService) Me(userID uint) (*models.UserListItem, error) {
+	var user models.User
+	if err := s.db.First(&user, userID).Error; err != nil {
+		return nil, err
+	}
+	return &models.UserListItem{ID: user.ID, Username: user.Username, IsAdmin: user.IsAdmin, CreatedAt: user.CreatedAt}, nil
+}
+
 // SeedDefaultUser 开发环境：自动创建默认管理员（仅在无用户时生效）
 func (s *AuthService) SeedDefaultUser(username, password string) error {
 	var count int64

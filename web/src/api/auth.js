@@ -8,6 +8,11 @@ export function getAuthStatus() {
   return request.get('/auth/status')
 }
 
+/** 当前登录用户实时信息（含数据库中的管理员身份） */
+export function getMe() {
+  return request.get('/auth/me')
+}
+
 /** 登录 */
 export function login(data) {
   return request.post('/auth/login', data)

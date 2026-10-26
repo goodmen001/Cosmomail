@@ -134,6 +134,15 @@ func (h *AuthHandler) DeleteUser(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"success": true, "message": "用户已删除"})
 }
 
+// Me 返回当前登录用户的实时信息（用户名、数据库中的管理员身份）
+func (h *AuthHandler) Me(c *fiber.Ctx) error {
+	item, err := h.service.Me(currentUserID(c))
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "用户不存在"})
+	}
+	return c.JSON(item)
+}
+
 // ChangePassword 修改当前用户密码
 func (h *AuthHandler) ChangePassword(c *fiber.Ctx) error {
 	var req models.ChangePasswordRequest

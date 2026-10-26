@@ -92,6 +92,7 @@ func Register(app *fiber.App, db *gorm.DB) {
 	//  用户与账号管理 API（需认证）
 	// ============================================================
 	userGroup := protected.Group("/auth")
+	userGroup.Get("/me", authHandler.Me) // 当前用户实时信息（含数据库中的管理员身份）
 	userGroup.Put("/change-password", authHandler.ChangePassword) // 修改自己密码
 
 	adminGroup := protected.Group("/admin")

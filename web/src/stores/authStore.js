@@ -17,13 +17,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function init() {
     if (token.value) {
-      // 有 token 时验证是否有效（清库/过期等场景）
+      // 有 token 时优先用服务端实时身份（避免浏览器旧 JWT 里 is_admin 过期）
       try {
-        await authApi.getAuthStatus()
-        // token 有效，更新用户名（isAdmin 从 JWT payload 解析）
-        const payload = parsePayload(token.value)
-        username.value = payload.username || ''
-        isAdmin.value = !!payload.is_admin
+        const me = await authApi.getMe()
+        username.value = me.username || ''
+        isAdmin.value = !!me.is_admin
       } catch (_) {
         // token 无效（401 / 后端已重置等），清除并标记需要重新登录
         logout()
