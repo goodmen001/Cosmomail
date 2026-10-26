@@ -20,29 +20,9 @@ if ! command -v ss >/dev/null 2>&1 && command -v netstat >/dev/null 2>&1 \
     echo "端口 ${PORT} 已被占用，请返回并选择其他端口" > "${TRIM_TEMP_LOGFILE}"
     exit 1
 fi
-# 自定义数据目录（可选，绝对路径，便于备份）
-DATA_DIR="${wizard_data_dir// /}"
-if [ -n "${DATA_DIR}" ]; then
-    case "${DATA_DIR}" in
-        /*) ;;
-        *)
-            echo "数据目录必须是绝对路径（以 / 开头）" > "${TRIM_TEMP_LOGFILE}"
-            exit 1
-            ;;
-    esac
-    if ! mkdir -p "${DATA_DIR}" 2>/dev/null || ! touch "${DATA_DIR}/.write_test" 2>/dev/null || ! rm -f "${DATA_DIR}/.write_test" 2>/dev/null; then
-        # 目录不可写（fnOS 共享文件夹的"任意用户可读写"不包含应用服务账号）。
-        # 不阻断安装，回退到默认数据目录，保证应用一定能装上。
-        echo "数据目录 ${DATA_DIR} 不可写，已自动改用默认数据目录（安装可继续）" > "${TRIM_TEMP_LOGFILE}"
-        DATA_DIR=""
-        rm -f "${TRIM_PKGETC}/data_dir"
-    fi
-fi
+# 数据目录：由 config/resource 的 data-share 声明（cosmomail-data 共享目录），
+# 安装时系统自动创建并授予应用账号 ACL 权限，无需手动指定。
 mkdir -p "${TRIM_PKGETC}"
 printf '%s\n' "${PORT}" > "${TRIM_PKGETC}/port"
-if [ -n "${DATA_DIR}" ]; then
-    printf '%s\n' "${DATA_DIR}" > "${TRIM_PKGETC}/data_dir"
-else
-    rm -f "${TRIM_PKGETC}/data_dir"
-fi
+rm -f "${TRIM_PKGETC}/data_dir"
 exit 0

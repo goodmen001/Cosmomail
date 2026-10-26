@@ -1,4 +1,9 @@
 {
+  "data-share": {
+    "shares": [
+      { "name": "cosmomail-data" }
+    ]
+  },
   "api-scope": [
     "trim.file.sharedAccess"
   ]

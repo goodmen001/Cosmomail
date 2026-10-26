@@ -20,9 +20,8 @@
       },
       {
         "type": "tips",
-        "helpText": "保存后请重启 Cosmo Mail，使新端口生效。"
+        "helpText": "数据库与附件保存在应用数据目录下的 cosmomail-data 共享文件夹（安装后自动创建，可在文件管理器中查看和备份）。"
       }
     ]
   }
 ]
-
