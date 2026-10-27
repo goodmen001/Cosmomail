@@ -3,10 +3,6 @@
     "stepTitle": "Cosmo Mail 服务配置",
     "items": [
       {
-        "type": "tips",
-        "helpText": "请选择一个未被占用的 Web 访问端口。安装后可在应用设置中修改。"
-      },
-      {
         "type": "text",
         "field": "wizard_port",
         "label": "Web 服务端口",
@@ -23,17 +19,9 @@
         ]
       },
       {
-        "type": "text",
-        "field": "wizard_data_dir",
-        "label": "数据目录（可选，便于备份，默认为应用数据目录）",
-        "initValue": "",
-        "rules": []
-      },
-      {
         "type": "tips",
-        "helpText": "自定义目录需要在 fnOS 管理后台为本应用做「共享授权」（或目录对应用账号可写）；否则安装时会自动回退：优先使用已授权目录，其次默认数据目录，安装不会失败。"
+        "helpText": "邮件数据库与附件保存在自动创建的 cosmomail-data 共享文件夹中，安装后可在文件管理器中直接查看和备份。"
       }
     ]
   }
 ]
-
