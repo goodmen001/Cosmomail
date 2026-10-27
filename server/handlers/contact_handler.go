@@ -4,6 +4,7 @@
 package handlers
 
 import (
+	"cosmomail/models"
 	"cosmomail/services"
 	"strconv"
 
@@ -53,6 +54,48 @@ func (h *ContactHandler) Sync(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": "同步失败", "detail": err.Error()})
 	}
 	return c.JSON(fiber.Map{"extracted": n})
+}
+
+// Create 手动新增联系人（POST /contacts）
+func (h *ContactHandler) Create(c *fiber.Ctx) error {
+	var req models.ContactRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "参数错误"})
+	}
+	ct, err := h.service.CreateContact(currentUserID(c), &req)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(ct)
+}
+
+// Update 手动修改联系人（PUT /contacts/:id）
+func (h *ContactHandler) Update(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil || id <= 0 {
+		return c.Status(400).JSON(fiber.Map{"error": "无效 ID"})
+	}
+	var req models.ContactRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "参数错误"})
+	}
+	ct, err := h.service.UpdateContact(currentUserID(c), uint(id), &req)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(ct)
+}
+
+// Delete 删除联系人（DELETE /contacts/:id）
+func (h *ContactHandler) Delete(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil || id <= 0 {
+		return c.Status(400).JSON(fiber.Map{"error": "无效 ID"})
+	}
+	if err := h.service.DeleteContact(currentUserID(c), uint(id)); err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"success": true})
 }
 
 // SyncCardDAV 从指定账号配置的 CardDAV 服务器同步联系人（POST /contacts/carddav/sync?account_id=N）

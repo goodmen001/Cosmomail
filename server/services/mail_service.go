@@ -226,8 +226,8 @@ func (s *MailService) GetByID(userID, id uint) (*models.MailResponse, error) {
 // MarkAsRead 标记邮件为已读/未读
 func (s *MailService) MarkAsRead(userID, id uint, isRead bool) error {
 	return s.db.Model(&models.Mail{}).
-		Joins("LEFT JOIN mail_accounts ON mails.account_id = mail_accounts.id").
-		Where("mails.id = ? AND mail_accounts.user_id = ?", id, userID).
+		Where("id = ? AND account_id IN (?)", id,
+			s.db.Model(&models.MailAccount{}).Select("id").Where("user_id = ?", userID)).
 		Update("is_read", isRead).Error
 }
 
@@ -244,8 +244,8 @@ func (s *MailService) BatchMarkAsRead(userID uint, ids []uint, isRead bool) *Bat
 
 	// 批量更新数据库（使用 IN 查询，一次 SQL 完成；限定当前用户的账号）
 	dbResult := s.db.Model(&models.Mail{}).
-		Joins("LEFT JOIN mail_accounts ON mails.account_id = mail_accounts.id").
-		Where("mails.id IN ? AND mail_accounts.user_id = ?", ids, userID).
+		Where("id IN ? AND account_id IN (?)", ids,
+			s.db.Model(&models.MailAccount{}).Select("id").Where("user_id = ?", userID)).
 		Update("is_read", isRead)
 
 	if dbResult.Error != nil {
@@ -260,9 +260,10 @@ func (s *MailService) BatchMarkAsRead(userID uint, ids []uint, isRead bool) *Bat
 
 // MarkAllAsRead 将符合筛选条件的所有邮件标记为已读
 func (s *MailService) MarkAllAsRead(userID uint, filter models.MailListFilter) (int64, error) {
+	// GORM 的 Update 不支持 JOIN，改用子查询限定当前用户的账号
 	query := s.db.Model(&models.Mail{}).
-		Joins("LEFT JOIN mail_accounts ON mails.account_id = mail_accounts.id").
-		Where("mail_accounts.user_id = ?", userID)
+		Where("account_id IN (?)",
+			s.db.Model(&models.MailAccount{}).Select("id").Where("user_id = ?", userID))
 
 	if filter.AccountID > 0 {
 		query = query.Where("account_id = ?", filter.AccountID)
@@ -288,8 +289,8 @@ func (s *MailService) MarkAllAsRead(userID uint, filter models.MailListFilter) (
 // MarkAsStarred 标记邮件星标
 func (s *MailService) MarkAsStarred(userID, id uint, starred bool) error {
 	return s.db.Model(&models.Mail{}).
-		Joins("LEFT JOIN mail_accounts ON mails.account_id = mail_accounts.id").
-		Where("mails.id = ? AND mail_accounts.user_id = ?", id, userID).
+		Where("id = ? AND account_id IN (?)", id,
+			s.db.Model(&models.MailAccount{}).Select("id").Where("user_id = ?", userID)).
 		Update("is_starred", starred).Error
 }
 
@@ -612,6 +613,69 @@ func (s *MailService) SyncAccountContacts(ownerID, accountID uint) (int64, error
 		return 0, err
 	}
 	return contacts.NewSyncService(s.db).SyncAccountContacts(ownerID, accountID, acct.Email)
+}
+
+// CreateContact 手动新增联系人
+func (s *MailService) CreateContact(ownerID uint, req *models.ContactRequest) (*models.Contact, error) {
+	email := models.NormalizeEmail(req.Email)
+	if email == "" || !strings.Contains(email, "@") {
+		return nil, fmt.Errorf("邮箱地址无效")
+	}
+	var existing models.Contact
+	if err := s.db.Where("user_id = ? AND email = ?", ownerID, email).First(&existing).Error; err == nil {
+		return nil, fmt.Errorf("联系人已存在")
+	}
+	ct := &models.Contact{
+		UserID: ownerID, Email: email, Name: req.Name,
+		AccountID: req.AccountID, LastUsedAt: time.Now(), UseCount: 0, Source: "manual",
+	}
+	if err := s.db.Create(ct).Error; err != nil {
+		return nil, err
+	}
+	return ct, nil
+}
+
+// UpdateContact 手动修改联系人（姓名/邮箱/所属账号）
+func (s *MailService) UpdateContact(ownerID, id uint, req *models.ContactRequest) (*models.Contact, error) {
+	var ct models.Contact
+	if err := s.db.Where("id = ? AND user_id = ?", id, ownerID).First(&ct).Error; err != nil {
+		return nil, fmt.Errorf("联系人不存在")
+	}
+	updates := map[string]interface{}{}
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Email != "" {
+		email := models.NormalizeEmail(req.Email)
+		if email == "" || !strings.Contains(email, "@") {
+			return nil, fmt.Errorf("邮箱地址无效")
+		}
+		if email != ct.Email {
+			var dup models.Contact
+			if err := s.db.Where("user_id = ? AND email = ?", ownerID, email).First(&dup).Error; err == nil {
+				return nil, fmt.Errorf("该邮箱已存在其他联系人")
+			}
+			updates["email"] = email
+		}
+	}
+	if req.AccountID > 0 {
+		updates["account_id"] = req.AccountID
+	}
+	if len(updates) > 0 {
+		if err := s.db.Model(&ct).Updates(updates).Error; err != nil {
+			return nil, err
+		}
+	}
+	return &ct, nil
+}
+
+// DeleteContact 删除联系人
+func (s *MailService) DeleteContact(ownerID, id uint) error {
+	res := s.db.Where("id = ? AND user_id = ?", id, ownerID).Delete(&models.Contact{})
+	if res.RowsAffected == 0 {
+		return fmt.Errorf("联系人不存在")
+	}
+	return res.Error
 }
 
 // SyncAccountCardDAV 从指定账号配置的 CardDAV 服务器同步联系人

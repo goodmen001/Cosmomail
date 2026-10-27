@@ -129,19 +129,26 @@
         <div v-if="showAddrBook" class="addr-book">
           <div v-for="acc in accountStore.accounts" :key="acc.id" class="addr-group">
             <div class="addr-group-title" @click="toggleGroup(acc.id)">
-              {{ acc.name || acc.email }}
-              <span class="toggle-icon">{{ expandedGroup === acc.id ? '▾' : '▸' }}</span>
+              <span class="addr-group-name">{{ acc.name || acc.email }}</span>
+              <span class="addr-group-actions">
+                <button class="addr-action-btn" title="新增联系人" @click.stop="openEdit(acc, null)">＋</button>
+                <span class="toggle-icon">{{ expandedGroup === acc.id ? '▾' : '▸' }}</span>
+              </span>
             </div>
             <div v-if="expandedGroup === acc.id" class="addr-list">
               <div v-if="addrLoading" class="addr-empty">加载中…</div>
               <div v-else-if="!accountContacts.length" class="addr-empty">暂无联系人</div>
-              <button
-                v-for="ct in accountContacts"
-                :key="ct.id"
-                class="addr-item"
-                :title="'点击复制 ' + ct.email"
-                @click="copyEmail(ct.email)"
-              >{{ ct.name ? ct.name + ' · ' : '' }}{{ ct.email }}</button>
+              <div v-for="ct in accountContacts" :key="ct.id" class="addr-row">
+                <button
+                  class="addr-item"
+                  :title="'点击复制 ' + ct.email"
+                  @click="copyEmail(ct.email)"
+                >{{ ct.name ? ct.name + ' · ' : '' }}{{ ct.email }}</button>
+                <span class="addr-row-actions">
+                  <button class="addr-action-btn" title="编辑" @click.stop="openEdit(acc, ct)">✎</button>
+                  <button class="addr-action-btn addr-del" title="删除" @click.stop="removeContact(ct)">×</button>
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -183,6 +190,20 @@
       </button>
     </div>
 
+    <!-- 联系人编辑弹窗 -->
+    <div v-if="editDialog.open" class="addr-dialog-mask" @click.self="editDialog.open = false">
+      <div class="addr-dialog">
+        <div class="addr-dialog-title">{{ editDialog.id ? '编辑联系人' : '新增联系人' }}</div>
+        <input v-model="editDialog.email" type="email" class="form-input" placeholder="邮箱地址" />
+        <input v-model="editDialog.name" type="text" class="form-input" placeholder="名称（可选）" />
+        <div v-if="editDialog.error" class="addr-dialog-error">{{ editDialog.error }}</div>
+        <div class="addr-dialog-btns">
+          <button class="btn btn-ghost" @click="editDialog.open = false">取消</button>
+          <button class="btn btn-primary" :disabled="editDialog.saving" @click="saveContact">保存</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 移动端遮罩层 -->
     <div
       v-if="isMobile && (open || mobileOpen)"
@@ -197,7 +218,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAccountStore } from '@/stores/accountStore'
 import { useMailStore } from '@/stores/mailStore'
-import { getContacts } from '@/api/contact'
+import { getContacts, createContact, updateContact, deleteContact } from '@/api/contact'
 
 const props = defineProps({
   collapsed: Boolean,
@@ -270,6 +291,57 @@ async function copyEmail(email) {
   }
 }
 const copiedTip = ref('')
+
+// ---- 联系人手动维护 ----
+const editDialog = ref({ open: false, id: null, accountId: null, email: '', name: '', saving: false, error: '' })
+
+function openEdit(account, contact) {
+  editDialog.value = {
+    open: true,
+    id: contact ? contact.id : null,
+    accountId: account ? account.id : null,
+    email: contact ? contact.email : '',
+    name: contact ? (contact.name || '') : '',
+    saving: false,
+    error: ''
+  }
+  // 新增时若该组尚未展开，先展开以便保存后可见
+  if (account && expandedGroup.value !== account.id) toggleGroup(account.id)
+}
+
+async function saveContact() {
+  const d = editDialog.value
+  if (!d.email.trim() || !d.email.includes('@')) {
+    d.error = '请输入有效的邮箱地址'
+    return
+  }
+  d.saving = true
+  d.error = ''
+  try {
+    if (d.id) {
+      await updateContact(d.id, { email: d.email, name: d.name })
+    } else {
+      await createContact({ email: d.email, name: d.name, account_id: d.accountId })
+    }
+    d.open = false
+    // 刷新当前展开的账号联系人
+    if (expandedGroup.value != null) loadAccountContacts(expandedGroup.value)
+  } catch (e) {
+    d.error = e.message || '保存失败'
+  } finally {
+    d.saving = false
+  }
+}
+
+async function removeContact(ct) {
+  if (!confirm('确定删除联系人 ' + ct.email + ' 吗？')) return
+  try {
+    await deleteContact(ct.id)
+    if (expandedGroup.value != null) loadAccountContacts(expandedGroup.value)
+  } catch (e) {
+    // 删除失败静默
+  }
+}
 
 onMounted(() => {
   // 仅当无缓存数据时加载账号
@@ -468,6 +540,33 @@ onUnmounted(() => {
   padding: 6px 8px; border-radius: var(--radius-sm, 6px); cursor: pointer;
 }
 .addr-group-title:hover { background: var(--bg-hover); color: var(--text-primary); }
+.addr-group-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.addr-group-actions { display: inline-flex; align-items: center; gap: 2px; }
+.addr-row { display: flex; align-items: center; }
+.addr-row .addr-item { flex: 1; min-width: 0; }
+.addr-row-actions { display: none; align-items: center; gap: 2px; flex-shrink: 0; }
+.addr-row:hover .addr-row-actions { display: inline-flex; }
+.addr-action-btn {
+  background: none; border: none; cursor: pointer; color: var(--text-tertiary);
+  font-size: 13px; line-height: 1; padding: 3px 5px; border-radius: 4px;
+}
+.addr-action-btn:hover { background: var(--bg-hover); color: var(--primary-500); }
+.addr-action-btn.addr-del:hover { color: var(--error, #ef4444); }
+
+/* 联系人编辑弹窗 */
+.addr-dialog-mask {
+  position: fixed; inset: 0; background: var(--bg-overlay, rgba(0,0,0,.4));
+  display: flex; align-items: center; justify-content: center; z-index: calc(var(--z-sidebar) + 10);
+}
+.addr-dialog {
+  background: var(--bg-primary); border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg); padding: 20px; width: 320px;
+  display: flex; flex-direction: column; gap: 10px;
+  box-shadow: var(--float-shadow, 0 10px 30px rgba(0,0,0,.15));
+}
+.addr-dialog-title { font-weight: var(--font-weight-bold); color: var(--text-primary); }
+.addr-dialog-error { font-size: 12px; color: var(--error, #ef4444); }
+.addr-dialog-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 .addr-list { display: flex; flex-direction: column; padding-left: 6px; }
 .addr-item {
   text-align: left; background: none; border: none; cursor: copy;

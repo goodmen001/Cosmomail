@@ -17,3 +17,18 @@ export function syncAccountContacts(accountId) {
 export function syncCardDAVContacts(accountId) {
   return request.post('/contacts/carddav/sync', null, { params: { account_id: accountId } })
 }
+
+/** 手动新增联系人 */
+export function createContact(data) {
+  return request.post('/contacts', data)
+}
+
+/** 修改联系人 */
+export function updateContact(id, data) {
+  return request.put(`/contacts/${id}`, data)
+}
+
+/** 删除联系人 */
+export function deleteContact(id) {
+  return request.delete(`/contacts/${id}`)
+}

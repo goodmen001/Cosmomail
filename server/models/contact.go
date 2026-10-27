@@ -49,6 +49,13 @@ const (
 	SettingKeyRegistrationEnabled = "registration_enabled" // 是否开放注册："true"/"false"
 )
 
+// ContactRequest 联系人手动维护请求（新增/修改）
+type ContactRequest struct {
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	AccountID uint   `json:"account_id"`
+}
+
 // ---- 用户相关 DTO 扩展 ----
 
 // RegisterEnabledRequest 管理员切换注册开关

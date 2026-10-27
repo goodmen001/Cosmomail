@@ -132,6 +132,9 @@ func Register(app *fiber.App, db *gorm.DB) {
 	// ============================================================
 	contacts := protected.Group("/contacts")
 	contacts.Get("", contactHandler.List)
+	contacts.Post("", contactHandler.Create)
+	contacts.Put("/:id", contactHandler.Update)
+	contacts.Delete("/:id", contactHandler.Delete)
 	contacts.Post("/sync", contactHandler.Sync)
 	contacts.Post("/carddav/sync", contactHandler.SyncCardDAV)
 
