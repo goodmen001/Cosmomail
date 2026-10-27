@@ -24,9 +24,8 @@ WORKDIR /build
 COPY server/go.mod server/go.sum ./
 RUN go mod download
 
-# 嵌入前端产物
-COPY server/ ./
-RUN rm -rf embedfs/dist && mkdir -p embedfs/dist && cp -r /build/dist ./embedfs/dist
+# 嵌入前端产物（从前端阶段复制）
+COPY --from=frontend /build/dist ./embedfs/dist
 
 ARG APP_VERSION=dev
 RUN CGO_ENABLED=0 GOOS=linux \
