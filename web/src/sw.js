@@ -36,8 +36,22 @@ self.addEventListener('push', (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Cosmo Mail', options)
+    self.registration.showNotification(data.title || 'Cosmo Mail', options).then(() => {
+      // 通知所有打开的页面刷新未读数/角标（页面收到后拉取 /mails/stats 更新桌面角标）
+      return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        for (const client of clientList) {
+          client.postMessage({ type: 'mail-received', data: data.data || {} })
+        }
+      })
+    })
   )
+})
+
+// --- 页面消息：SW 收到推送后页面无需等可见即可响应（后台页也会收到 message） ---
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'get-unread') {
+    // 预留：页面主动询问；当前页面侧自行 fetch stats，无需处理
+  }
 })
 
 // --- Notification Click/Action：点击通知或按钮时处理 ---

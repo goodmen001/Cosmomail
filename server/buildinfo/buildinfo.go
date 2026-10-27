@@ -5,7 +5,7 @@ package buildinfo
 
 // Values are replaced by release/build scripts through -ldflags -X.
 var (
-	Version   = "1.4.9"
+	Version   = "1.5.0"
 	BuildTime = "unknown"
 	GitCommit = "dev"
 )

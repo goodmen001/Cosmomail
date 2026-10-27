@@ -132,6 +132,40 @@ document.addEventListener('visibilitychange', () => {
   }
 })
 
+// --- 新邮件到达时自动更新角标（无需用户进入应用） ---
+// 1. SW 收到 Web Push 后会 postMessage 给所有页面（含后台页面），这里响应刷新角标。
+//    同时顺手把系统通知关掉未读也提示在 tabbar 把手上。
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'mail-received') {
+      refreshBadgeFromStats()
+    }
+  })
+}
+
+// 2. 原生 App 兜底：Capacitor WebView 可能不持久支持 SW 推送，
+//    登录状态下启动一个低频后台定时器（默认 60s，随用户轮询设置）拉取统计刷新角标。
+let badgeTimer = null
+function startBadgeTimer() {
+  stopBadgeTimer()
+  const interval = appStore.pollInterval || 60000
+  badgeTimer = setInterval(() => {
+    if (document.visibilityState === 'visible' && authStore.isLoggedIn) {
+      refreshBadgeFromStats()
+    }
+  }, interval)
+}
+function stopBadgeTimer() {
+  if (badgeTimer) { clearInterval(badgeTimer); badgeTimer = null }
+}
+watch(() => authStore.isLoggedIn, (loggedIn) => {
+  if (loggedIn) startBadgeTimer()
+  else { stopBadgeTimer(); updateBadge(0) }
+}, { immediate: true })
+watch(() => appStore.pollInterval, () => {
+  if (authStore.isLoggedIn) startBadgeTimer()
+})
+
 // 切换主题
 function toggleTheme() {
   appStore.toggleTheme()
