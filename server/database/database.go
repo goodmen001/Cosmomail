@@ -79,6 +79,16 @@ func Init(dsn string) *gorm.DB {
 		log.Printf("⚠️  移除旧单管理员约束失败: %v", err)
 	}
 
+	// 旧版本升级兼容：邮箱账号的 email 唯一索引从单用户版的全局唯一改为 (user_id, email)
+	// 组合唯一（AutoMigrate 只会新建索引不会删除旧索引），多用户模式下不同用户可各自添加同一邮箱。
+	// 新组合索引由 AutoMigrate 建立为 idx_account_user_email；旧全局索引名按gorm默认规则匹配。
+	// 注意必须先 AutoMigrate 建好新索引再删旧索引，否则唯一约束会出现空窗。
+	for _, oldIdx := range []string{"idx_mail_accounts_email"} {
+		if err := db.Exec("DROP INDEX IF EXISTS " + oldIdx).Error; err != nil {
+			log.Printf("⚠️  移除旧邮箱唯一索引 %s 失败: %v", oldIdx, err)
+		}
+	}
+
 	// 旧版本升级兼容：多用户版新增 is_admin 字段，历史用户默认全部 false。
 	// 若没有任何管理员，则把最早注册的用户提升为管理员，否则无人能进入用户管理/注册开关。
 	var totalUsers, adminUsers int64
