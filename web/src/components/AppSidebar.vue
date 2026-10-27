@@ -130,6 +130,43 @@
         </transition>
       </router-link>
 
+      <!-- 目录（按邮箱账号，点击直达归档邮件） -->
+      <div class="addr-section" v-show="!collapsed">
+        <button class="nav-item addr-toggle" @click="showFolderBook = !showFolderBook">
+          <span class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M2.5 5.5A2 2 0 0 1 4.5 3.5h3.2l1.6 2h6.2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M7 10.5h6M10 7.5v6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="nav-label">目录</span>
+          <span class="toggle-icon">{{ showFolderBook ? '▾' : '▸' }}</span>
+        </button>
+        <div v-if="showFolderBook" class="addr-book">
+          <div v-if="!accountStore.accounts.length" class="addr-empty">暂无邮箱账号</div>
+          <div v-for="acc in accountStore.accounts" :key="acc.id" class="addr-group">
+            <div class="addr-group-title" @click="toggleFolderGroup(acc.id)">
+              <span class="addr-group-name">{{ acc.name || acc.email }}</span>
+              <span class="addr-group-actions">
+                <button class="addr-action-btn" title="管理目录与规则" @click.stop="handleNavClick('/folders')">⚙</button>
+                <span class="toggle-icon">{{ folderExpandedGroup === acc.id ? '▾' : '▸' }}</span>
+              </span>
+            </div>
+            <div v-if="folderExpandedGroup === acc.id" class="addr-list">
+              <div v-if="folderLoading" class="addr-empty">加载中…</div>
+              <div v-else-if="!accountFolders.length" class="addr-empty">暂无自定义目录</div>
+              <button
+                v-for="f in accountFolders"
+                :key="f.id"
+                class="addr-item folder-link"
+                :title="'查看归档邮件：' + f.name"
+                @click="openFolder(acc.id, f.slug)"
+              >📁 {{ f.name }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 通讯录（按邮箱账号） -->
       <div class="addr-section" v-show="!collapsed">
         <button class="nav-item addr-toggle" @click="showAddrBook = !showAddrBook">
@@ -237,6 +274,7 @@ import { useRoute } from 'vue-router'
 import { useAccountStore } from '@/stores/accountStore'
 import { useMailStore } from '@/stores/mailStore'
 import { getContacts, createContact, updateContact, deleteContact } from '@/api/contact'
+import { getFolders } from '@/api/mailFolder'
 
 const props = defineProps({
   collapsed: Boolean,
@@ -277,6 +315,37 @@ const showAddrBook = ref(false)
 const expandedGroup = ref(null)
 const accountContacts = ref([])
 const addrLoading = ref(false)
+
+// ---- 目录（按账号展开，点击直达归档邮件） ----
+const showFolderBook = ref(false)
+const folderExpandedGroup = ref(null)
+const accountFolders = ref([])
+const folderLoading = ref(false)
+
+function toggleFolderGroup(accountId) {
+  if (folderExpandedGroup.value === accountId) {
+    folderExpandedGroup.value = null
+    return
+  }
+  folderExpandedGroup.value = accountId
+  loadAccountFolders(accountId)
+}
+
+async function loadAccountFolders(accountId) {
+  folderLoading.value = true
+  try {
+    const res = await getFolders(accountId)
+    accountFolders.value = res.folders || []
+  } catch (e) {
+    accountFolders.value = []
+  } finally {
+    folderLoading.value = false
+  }
+}
+
+function openFolder(accountId, slug) {
+  handleNavClick(`/mails?account_id=${accountId}&folder=${encodeURIComponent(slug)}`)
+}
 
 function toggleGroup(accountId) {
   if (expandedGroup.value === accountId) {
@@ -594,6 +663,8 @@ onUnmounted(() => {
 }
 .addr-item:hover { background: var(--bg-hover); color: var(--primary-500); }
 .addr-empty { font-size: 12px; color: var(--text-tertiary); padding: 4px 8px; }
+.folder-link { cursor: pointer; }
+.folder-link:hover { color: var(--primary-500); }
 
 /* ---- 底部状态 ---- */
 .footer-status {

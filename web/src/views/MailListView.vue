@@ -370,8 +370,29 @@ watch(() => mailStore.filters.account_id, async (id) => {
       const res = await getFolders(id)
       customFolders.value = res.folders || []
     } catch (e) { console.warn('[MailList] 加载目录失败', e) }
+  } else {
+    // 未选账号：汇总所有账号的自定义目录（用于目录筛选下拉）
+    try {
+      const results = await Promise.all(
+        (accountStore.accounts || []).map(a => getFolders(a.id).catch(() => ({ folders: [] })))
+      )
+      const seen = new Set()
+      customFolders.value = results.flatMap(r => r.folders || []).filter(f => {
+        if (seen.has(f.slug)) return false
+        seen.add(f.slug)
+        return true
+      })
+    } catch (e) { console.warn('[MailList] 加载目录失败', e) }
   }
 }, { immediate: true })
+
+// 侧边栏目录入口在本页内再次点击时，路由 query 变化但组件不重新挂载，需监听
+watch(() => route.query, (q, old) => {
+  if (route.path !== '/mails') return
+  if ((q.folder !== undefined || q.account_id) && q !== old) {
+    applyRouteQuery()
+  }
+})
 
 function handleFolderSelect(value) {
   showFolderDropdown.value = false
@@ -611,26 +632,33 @@ onMounted(async () => {
     await accountStore.fetchAccounts()
   }
 
-  // 从 URL query 同步筛选参数
+  applyRouteQuery()
+})
+
+// 从 URL query 应用筛选（?account_id=&folder=&is_read=&keyword=），
+// 侧边栏「目录」入口即通过该方式直达指定账号的归档邮件视图。
+function applyRouteQuery() {
   const q = route.query
   if (q.keyword) appStore.setSearchKeyword(q.keyword)
   if (q.is_read) activeFilter.value = q.is_read === 'true' ? 'unread' : 'read'
-
-  // 设置默认文件夹为收件箱（不传 folder 时默认 inbox）
-  if (!mailStore.filters.folder || mailStore.filters.folder === '') {
-    mailStore.setFilter('folder', 'inbox')
-  } else {
-    await mailStore.fetchMails(1)
+  if (q.account_id) {
+    mailStore.setFilter('account_id', String(q.account_id))
+    selectedAccountId.value = String(q.account_id)
   }
 
-  // 获取统计信息（用于标签计数）
+  if (q.folder !== undefined) {
+    // 显式指定目录（含自定义目录 slug；空串=所有目录）
+    mailStore.setFilter('folder', String(q.folder))
+    activeFilter.value = 'all'
+    mailStore.setFilter('is_read', null)
+    mailStore.setFilter('has_attachment', null)
+  } else if (!mailStore.filters.folder || mailStore.filters.folder === '') {
+    // 未指定目录时默认收件箱
+    mailStore.setFilter('folder', 'inbox')
+  }
+  mailStore.fetchMails(1)
   mailStore.fetchStats()
-
-  // 启动定时刷新作为 SSE 的备用机制。
-  startRefreshTimer()
-
-  document.addEventListener('click', handleDocumentClick)
-})
+}
 
 // 点击外部关闭下拉框
 function handleDocumentClick(e) {
@@ -639,11 +667,16 @@ function handleDocumentClick(e) {
   if (!e.target.closest('.sort-filter')) showSortDropdown.value = false
 }
 
+// keep-alive 激活：若 URL query 变化（如再次点击侧边栏目录入口），按新 query 刷新；
+// 否则保持当前筛选并刷新列表数据
 onActivated(() => {
-  // 从缓存恢复时重置为收件箱并刷新列表数据
-  mailStore.setFilter('folder', 'inbox')
-  mailStore.fetchMails(mailStore.currentPage)
-  mailStore.fetchStats()
+  const q = route.query
+  if (q.folder !== undefined || q.account_id) {
+    applyRouteQuery()
+  } else {
+    mailStore.fetchMails(mailStore.currentPage)
+    mailStore.fetchStats()
+  }
   startRefreshTimer()
 })
 
