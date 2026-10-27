@@ -6,37 +6,53 @@
 
 LOG_PREFIX="[uninstall]"
 
-# 数据目录解析逻辑与 cmd/main 保持一致：
-#   1. config/resource data-share 声明的 cosmomail-data 共享目录
-#      （TRIM_DATA_SHARE_PATHS 首个路径，或 /var/apps/*/share/cosmomail-data）
-#   2. 回退 TRIM_PKGVAR/data
-resolve_data_dir() {
-    local share
+# 数据目录解析逻辑与 cmd/main 保持一致（顺序：自定义 → 授权目录 → data-share → 默认）
+query_authorized_dir() {
+    [ -n "${TRIM_API_TOKEN}" ] && [ -S "/var/run/trim_open_gateway_apiscope.socket" ] || return 1
+    command -v curl >/dev/null 2>&1 || return 1
+    curl -s --max-time 5 --unix-socket /var/run/trim_open_gateway_apiscope.socket \
+        -X POST http://localhost/api/v1/trimapp \
+        -H 'Content-Type: application/json' \
+        -H "Authorization: Bearer ${TRIM_API_TOKEN}" \
+        -d "{\"reqId\":\"1\",\"req\":\"trim.file.getSharedAccessibleFolders\",\"appName\":\"com.goodmen001.cosmomail\",\"data\":{}}" \
+        2>/dev/null \
+        | sed -n 's/.*"paths":\[[^]]*"\([^"]*\)".*/\1/p' | head -n 1
+}
+
+resolve_data_dirs() {
+    # 输出所有可能存有数据的目录（每行一个），按优先级
+    local share custom
+    # 1. 向导自定义目录
+    if [ -r "${TRIM_PKGETC}/data_dir" ]; then
+        custom="$(head -n 1 "${TRIM_PKGETC}/data_dir" | tr -d '[:space:]')"
+        case "${custom}" in
+            /*) printf '%s\n' "${custom}" ;;
+        esac
+    fi
+    # 2. 管理员共享授权目录下的 cosmomail-data 子目录
+    share="$(query_authorized_dir)"
+    if [ -n "${share}" ] && [ -d "${share}/cosmomail-data" ]; then
+        printf '%s\n' "${share}/cosmomail-data"
+    fi
+    # 3. data-share 共享目录
     if [ -n "${TRIM_DATA_SHARE_PATHS}" ]; then
         share="${TRIM_DATA_SHARE_PATHS%%:*}"
-        if [ -n "${share}" ] && [ -d "${share}" ]; then
-            printf '%s' "${share}"
-            return 0
-        fi
+        [ -n "${share}" ] && [ -d "${share}" ] && printf '%s\n' "${share}"
     fi
     for share in /var/apps/*/share/cosmomail-data; do
-        if [ -d "${share}" ]; then
-            printf '%s' "${share}"
-            return 0
-        fi
+        [ -d "${share}" ] && printf '%s\n' "${share}"
     done
-    printf '%s' "${TRIM_PKGVAR}/data"
+    # 4. 默认数据目录
+    [ -d "${TRIM_PKGVAR}/data" ] && printf '%s\n' "${TRIM_PKGVAR}/data"
 }
 
 case "${purge_data:-keep}" in
     purge)
-        DATA_DIR="$(resolve_data_dir)"
-        # 删除全部可能的数据位置（数据库、附件、上传文件）：
-        # 1. data-share 共享目录 / 默认数据目录
-        if [ -d "${DATA_DIR}" ]; then
-            rm -rf "${DATA_DIR}" 2>/dev/null
-        fi
-        # 2. 运行时文件（日志、pid、数据目录指针）
+        # 删除全部可能的数据位置（数据库、附件、上传文件）
+        resolve_data_dirs | while IFS= read -r dir; do
+            [ -n "${dir}" ] && rm -rf "${dir}" 2>/dev/null
+        done
+        # 运行时文件（日志、pid、数据目录指针）
         rm -f "${TRIM_PKGVAR}/cosmomail.log" "${TRIM_PKGVAR}/cosmomail.pid"
         rm -rf "${TRIM_PKGVAR}/data" 2>/dev/null
         rm -f "${TRIM_PKGETC}/data_dir"

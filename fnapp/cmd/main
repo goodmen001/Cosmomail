@@ -3,29 +3,66 @@
 LOG_FILE="${TRIM_PKGVAR}/cosmomail.log"
 PID_FILE="${TRIM_PKGVAR}/cosmomail.pid"
 
-# 数据目录解析（对齐飞牛官方规范）：
-#   首选 config/resource 声明的 data-share 共享目录（TRIM_DATA_SHARE_PATHS，
-#   安装时系统自动创建并授予应用账号 ACL 权限，文件管理器可直接查看/备份）；
-#   回退 TRIM_PKGVAR/data（官方运行数据目录，数据库/运行文件所在）。
+# 数据目录解析（按官方规范实现自定义目录，优先级从高到低）：
+#   1. 安装向导填写的自定义目录（TRIM_PKGETC/data_dir，写测试通过才采用）
+#   2. 管理员「应用共享授权」目录（官方 trim.file.sharedAccess 机制，
+#      fnOS 应用设置中授权后系统自动授予应用账号 ACL 权限，数据落在
+#      <授权目录>/cosmomail-data，文件管理器可见可备份）
+#   3. config/resource 声明的 data-share 共享目录（TRIM_DATA_SHARE_PATHS，
+#      安装时系统自动创建 cosmomail-data 共享文件夹）
+#   4. TRIM_PKGVAR/data（官方运行数据目录，最终兜底）
+# 查询管理员「应用共享授权」目录（仅管理员可授权，应用账号只读查询结果）
+query_authorized_dir() {
+    [ -n "${TRIM_API_TOKEN}" ] && [ -S "/var/run/trim_open_gateway_apiscope.socket" ] || return 1
+    command -v curl >/dev/null 2>&1 || return 1
+    curl -s --max-time 5 --unix-socket /var/run/trim_open_gateway_apiscope.socket \
+        -X POST http://localhost/api/v1/trimapp \
+        -H 'Content-Type: application/json' \
+        -H "Authorization: Bearer ${TRIM_API_TOKEN}" \
+        -d "{\"reqId\":\"1\",\"req\":\"trim.file.getSharedAccessibleFolders\",\"appName\":\"com.goodmen001.cosmomail\",\"data\":{}}" \
+        2>/dev/null \
+        | sed -n 's/.*"paths":\[[^]]*"\([^"]*\)".*/\1/p' | head -n 1
+}
+
+write_test() {
+    mkdir -p "$1" 2>/dev/null && touch "$1/.write_test" 2>/dev/null \
+        && rm -f "$1/.write_test" 2>/dev/null
+}
+
 resolve_data_dir() {
-    local share
+    local share custom
+    # 1. 向导自定义目录
+    if [ -r "${TRIM_PKGETC}/data_dir" ]; then
+        custom="$(head -n 1 "${TRIM_PKGETC}/data_dir" | tr -d '[:space:]')"
+        case "${custom}" in
+            /*) if write_test "${custom}"; then
+                    printf '%s' "${custom}"
+                    return 0
+                fi ;;
+        esac
+    fi
+    # 2. 管理员共享授权目录（数据放在其下 cosmomail-data 子目录）
+    share="$(query_authorized_dir)"
+    if [ -n "${share}" ] && write_test "${share}/cosmomail-data"; then
+        printf '%s' "${share}/cosmomail-data"
+        return 0
+    fi
+    # 3. data-share 声明的共享目录（可能是 "path1:path2"，取第一个）
     if [ -n "${TRIM_DATA_SHARE_PATHS}" ]; then
-        # 可能是 "path1:path2"，取第一个
         share="${TRIM_DATA_SHARE_PATHS%%:*}"
-        if [ -n "${share}" ] && mkdir -p "${share}" 2>/dev/null && touch "${share}/.write_test" 2>/dev/null; then
-            rm -f "${share}/.write_test" 2>/dev/null
+        if [ -n "${share}" ] && write_test "${share}"; then
             printf '%s' "${share}"
             return 0
         fi
     fi
-    # data-share 不可用时（旧版升级/变量缺失），尝试 /var/apps/<appname>/share 软链
+    # 3b. data-share 不可用时（旧版升级/变量缺失），尝试 /var/apps/<appname>/share 软链
     for share in /var/apps/*/share/cosmomail-data; do
-        if [ -d "${share}" ] && touch "${share}/.write_test" 2>/dev/null; then
-            rm -f "${share}/.write_test" 2>/dev/null
+        if [ -d "${share}" ] && write_test "${share}"; then
             printf '%s' "${share}"
             return 0
         fi
     done
+    # 4. 最终兜底
     printf '%s' "${TRIM_PKGVAR}/data"
     return 0
 }

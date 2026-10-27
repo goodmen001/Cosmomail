@@ -20,9 +20,17 @@ if ! command -v ss >/dev/null 2>&1 && command -v netstat >/dev/null 2>&1 \
     echo "端口 ${PORT} 已被占用，请返回并选择其他端口" > "${TRIM_TEMP_LOGFILE}"
     exit 1
 fi
-# 数据目录：由 config/resource 的 data-share 声明（cosmomail-data 共享目录），
-# 安装时系统自动创建并授予应用账号 ACL 权限，无需手动指定。
+# 自定义数据目录（可选）：不阻断安装，只做合法性检查并记录。
+# 真正的可写性验证在启动时进行（应用账号才有最终权限）。
+DATA_DIR="${wizard_data_dir// /}"
 mkdir -p "${TRIM_PKGETC}"
 printf '%s\n' "${PORT}" > "${TRIM_PKGETC}/port"
-rm -f "${TRIM_PKGETC}/data_dir"
+if [ -n "${DATA_DIR}" ]; then
+    case "${DATA_DIR}" in
+        /*) printf '%s\n' "${DATA_DIR}" > "${TRIM_PKGETC}/data_dir" ;;
+        *) rm -f "${TRIM_PKGETC}/data_dir" ;;
+    esac
+else
+    rm -f "${TRIM_PKGETC}/data_dir"
+fi
 exit 0

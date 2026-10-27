@@ -9,9 +9,16 @@ esac
 if [ "${PORT}" -lt 10 ] || [ "${PORT}" -gt 65535 ]; then
     exit 1
 fi
-# 数据目录：由 config/resource 的 data-share 声明（cosmomail-data 共享目录），
-# 不再支持手动指定，故仅保存端口。
+# 自定义数据目录（可选，绝对路径）：仅保存，启动时做可写性验证
+DATA_DIR="${wizard_data_dir// /}"
 mkdir -p "${TRIM_PKGETC}"
 printf '%s\n' "${PORT}" > "${TRIM_PKGETC}/port"
-rm -f "${TRIM_PKGETC}/data_dir"
+if [ -n "${DATA_DIR}" ]; then
+    case "${DATA_DIR}" in
+        /*) printf '%s\n' "${DATA_DIR}" > "${TRIM_PKGETC}/data_dir" ;;
+        *) rm -f "${TRIM_PKGETC}/data_dir" ;;
+    esac
+else
+    rm -f "${TRIM_PKGETC}/data_dir"
+fi
 exit 0
