@@ -52,6 +52,7 @@
       <h3 class="item-subject" :class="{ 'font-semibold': !mail.is_read }">
         {{ mail.subject || '(无主题)' }}
       </h3>
+      <span v-if="inCustomFolder" class="item-folder-badge">📁 {{ mail.folder }}</span>
 
       <span class="item-to text-muted">
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="vertical-align: -1px; margin-right: 4px;">
@@ -106,6 +107,11 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['click', 'mark-read', 'delete', 'star', 'toggle-select'])
+
+// 是否被归档到自定义目录（非 inbox/sent 时显示目录徽标）
+const inCustomFolder = computed(() => {
+  return props.mail.folder && props.mail.folder !== 'inbox' && props.mail.folder !== 'sent'
+})
 
 // ---- 右键菜单 ----
 const contextVisible = ref(false)
@@ -304,6 +310,21 @@ const relativeTime = computed(() => {
   font-size: var(--font-size-base);
   color: var(--text-primary);
   margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-folder-badge {
+  display: inline-block;
+  margin-bottom: 2px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--primary-50, rgba(79, 110, 247, 0.1));
+  color: var(--primary-color, #4F6EF7);
+  font-size: 11px;
+  line-height: 16px;
+  max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

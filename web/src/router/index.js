@@ -22,6 +22,12 @@ const routes = [
     meta: { title: '邮件列表' }
   },
   {
+    path: '/folders',
+    name: 'MailFolders',
+    component: () => import('../views/MailFoldersView.vue'),
+    meta: { title: '目录与规则' }
+  },
+  {
     path: '/sent',
     name: 'Sent',
     component: () => import('../views/SentView.vue'),

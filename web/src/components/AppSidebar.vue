@@ -93,6 +93,24 @@
         </transition>
       </router-link>
 
+      <!-- 目录与规则 -->
+      <router-link
+        to="/folders"
+        class="nav-item"
+        active-class="active"
+        @click="handleNavClick('/folders')"
+      >
+        <span class="nav-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M2.5 5.5A2 2 0 0 1 4.5 3.5h3.2l1.6 2h6.2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M7 10.5h6M10 7.5v6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <transition name="fade-text">
+          <span v-show="!collapsed" class="nav-label">目录与规则</span>
+        </transition>
+      </router-link>
+
       <!-- 邮箱管理 -->
       <router-link
         to="/accounts"

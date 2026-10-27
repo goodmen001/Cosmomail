@@ -68,6 +68,7 @@ func Register(app *fiber.App, db *gorm.DB) {
 	pushHandler := handlers.NewPushHandler(pushService)
 	contactHandler := handlers.NewContactHandler(mailService)
 	externalHandler := handlers.NewExternalApiHandler(mailService)
+	folderHandler := handlers.NewMailFolderHandler(db)
 
 	// 认证中间件实例
 	authMiddleware := middleware.AuthRequired(authService)
@@ -137,6 +138,21 @@ func Register(app *fiber.App, db *gorm.DB) {
 	contacts.Delete("/:id", contactHandler.Delete)
 	contacts.Post("/sync", contactHandler.Sync)
 	contacts.Post("/carddav/sync", contactHandler.SyncCardDAV)
+
+	// ============================================================
+	//  自定义邮件目录 + 归档规则 API（按邮箱账号维度，本地归档）
+	// ============================================================
+	folders := protected.Group("/mail-folders")
+	folders.Get("", folderHandler.Folders)
+	folders.Post("", folderHandler.CreateFolder)
+	folders.Put("/:id", folderHandler.UpdateFolder)
+	folders.Delete("/:id", folderHandler.DeleteFolder)
+
+	rules := protected.Group("/mail-rules")
+	rules.Get("", folderHandler.Rules)
+	rules.Post("", folderHandler.CreateRule)
+	rules.Put("/:id", folderHandler.UpdateRule)
+	rules.Delete("/:id", folderHandler.DeleteRule)
 
 	// ============================================================
 	//  OAuth2 授权 API（设备码流）

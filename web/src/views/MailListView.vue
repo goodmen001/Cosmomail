@@ -84,6 +84,39 @@
           {{ selectable ? '取消' : '选择' }}
         </button>
 
+        <!-- 目录筛选器 -->
+        <div class="folder-filter">
+          <button
+            class="filter-btn"
+            :class="{ active: mailStore.filters.folder && mailStore.filters.folder !== 'inbox' }"
+            @click.stop="toggleFolderDropdown"
+          >
+            <span class="btn-icon-sm">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h2.4l1.1 1.4H11A1.5 1.5 0 0 1 12.5 5.9v4.1A1.5 1.5 0 0 1 11 11.5H3A1.5 1.5 0 0 1 1.5 10v-5.5Z" stroke="currentColor" stroke-width="1.2"/>
+              </svg>
+            </span>
+            {{ selectedFolderLabel }}
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" class="btn-arrow" :class="{ open: showFolderDropdown }">
+              <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <transition name="dropdown">
+            <div v-if="showFolderDropdown" class="folder-dropdown card">
+              <button
+                v-for="opt in folderOptions"
+                :key="opt.value"
+                class="account-option"
+                :class="{ active: (mailStore.filters.folder || '') === opt.value }"
+                @click="handleFolderSelect(opt.value)"
+              >
+                <span class="option-label">{{ opt.label }}</span>
+              </button>
+            </div>
+          </transition>
+        </div>
+
         <!-- 账号筛选器 -->
         <div class="account-filter">
           <button
@@ -208,6 +241,7 @@ import { useAppStore } from '@/stores/appStore'
 import { useAccountStore } from '@/stores/accountStore'
 import { useToast } from '@/composables/useToast'
 import { useMailStream } from '@/composables/useSSE'
+import { getFolders } from '@/api/mailFolder'
 import MailItem from '../components/MailItem.vue'
 import Pagination from '../components/Pagination.vue'
 import EmptyState from '../components/EmptyState.vue'
@@ -226,6 +260,8 @@ const sortOrder = ref('desc')
 const selectedAccountId = ref('')
 const showAccountDropdown = ref(false)
 const showSortDropdown = ref(false)
+const showFolderDropdown = ref(false)
+const customFolders = ref([]) // 当前账号的自定义目录
 
 // --- 批量选择状态 ---
 const selectable = ref(false)
@@ -294,7 +330,7 @@ const emptyDescription = computed(() => {
 // --- 操作 ---
 async function handleFilter(filterKey) {
   activeFilter.value = filterKey
-  
+
   let isRead = null
   let hasAttachment = null
 
@@ -304,6 +340,49 @@ async function handleFilter(filterKey) {
 
   mailStore.setFilter('is_read', isRead)
   mailStore.setFilter('has_attachment', hasAttachment)
+
+  // 最新未读为跨目录统一视图：查看未读时取消目录过滤，
+  // 被规则归档到自定义目录的未读邮件同样显示，打开（已读）后才消失。
+  if (filterKey === 'unread' && mailStore.filters.folder) {
+    mailStore.setFilter('folder', '')
+  }
+}
+
+// 目录筛选选项：收件箱 + 自定义目录（当前所选账号）
+const folderOptions = computed(() => [
+  { value: '', label: '所有目录（含归档）' },
+  { value: 'inbox', label: '收件箱' },
+  ...customFolders.value.map(f => ({ value: f.slug, label: `📁 ${f.name}` })),
+])
+
+const selectedFolderLabel = computed(() => {
+  const cur = mailStore.filters.folder || ''
+  if (cur === 'inbox') return '收件箱'
+  const f = customFolders.value.find(x => x.slug === cur)
+  return f ? `📁 ${f.name}` : '所有目录'
+})
+
+// 当前账号变化时加载其自定义目录
+watch(() => mailStore.filters.account_id, async (id) => {
+  customFolders.value = []
+  if (id) {
+    try {
+      const res = await getFolders(id)
+      customFolders.value = res.folders || []
+    } catch (e) { console.warn('[MailList] 加载目录失败', e) }
+  }
+}, { immediate: true })
+
+function handleFolderSelect(value) {
+  showFolderDropdown.value = false
+  mailStore.setFilter('folder', value || '')
+  mailStore.fetchMails(1)
+}
+
+function toggleFolderDropdown() {
+  showAccountDropdown.value = false
+  showSortDropdown.value = false
+  showFolderDropdown.value = !showFolderDropdown.value
 }
 
 function handleAccountSelect(accountId) {
@@ -315,6 +394,7 @@ function handleAccountSelect(accountId) {
 
 function toggleAccountDropdown() {
   showSortDropdown.value = false
+  showFolderDropdown.value = false
   showAccountDropdown.value = !showAccountDropdown.value
 }
 
@@ -327,6 +407,7 @@ function handleSortSelect(value) {
 
 function toggleSortDropdown() {
   showAccountDropdown.value = false
+  showFolderDropdown.value = false
   showSortDropdown.value = !showSortDropdown.value
 }
 
@@ -554,6 +635,7 @@ onMounted(async () => {
 // 点击外部关闭下拉框
 function handleDocumentClick(e) {
   if (!e.target.closest('.account-filter')) showAccountDropdown.value = false
+  if (!e.target.closest('.folder-filter')) showFolderDropdown.value = false
   if (!e.target.closest('.sort-filter')) showSortDropdown.value = false
 }
 

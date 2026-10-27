@@ -69,6 +69,8 @@ func Init(dsn string) *gorm.DB {
 		&models.MailboxSyncState{},
 		&models.Contact{},
 		&models.AppSetting{},
+		&models.MailFolder{},
+		&models.MailRule{},
 	); err != nil {
 		log.Fatalf("❌ 数据库迁移失败: %v", err)
 	}

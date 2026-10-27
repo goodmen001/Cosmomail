@@ -14,8 +14,9 @@ import (
 	"time"
 
 	"cosmomail/config"
-	"cosmomail/models"
 	"cosmomail/contacts"
+	"cosmomail/models"
+	"cosmomail/rules"
 	"cosmomail/storage"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -328,10 +329,22 @@ func (f *Fetcher) parseMessage(client *IMAPClient, buf *imapclient.FetchMessageB
 
 	// Use the indexed IMAP identity for deduplication. Message-ID is not unique
 	// enough across folders and is slower for the hot incremental path.
+	// 注意：已按规则归档到自定义目录的邮件 folder 不再是 inbox，去重时需要
+	// 同时匹配原始 folder（inbox）与归档后的 folder，否则下轮同步会重复入库。
+	dedupFolders := []string{f.folder}
+	if f.folder == models.FolderInbox {
+		var customSlugs []string
+		f.db.Model(&models.MailFolder{}).Where("account_id = ?", client.Account.ID).
+			Pluck("slug", &customSlugs)
+		dedupFolders = append(dedupFolders, customSlugs...)
+	}
 	var existing int64
-	f.db.Model(&models.Mail{}).
-		Where("account_id = ? AND folder = ? AND message_uid = ?", client.Account.ID, f.folder, uint32(buf.UID)).
-		Count(&existing)
+	q := f.db.Model(&models.Mail{}).
+		Where("account_id = ? AND message_uid = ?", client.Account.ID, uint32(buf.UID))
+	if len(dedupFolders) > 0 {
+		q = q.Where("folder IN ?", dedupFolders)
+	}
+	q.Count(&existing)
 	if existing > 0 {
 		return nil, nil, nil // 已存在，跳过
 	}
@@ -428,6 +441,19 @@ func (f *Fetcher) parseMessage(client *IMAPClient, buf *imapclient.FetchMessageB
 			// 清理可能已创建的文件
 			if att.FilePath != "" && storage.IsAttachmentPath(att.FilePath) {
 				os.Remove(att.FilePath)
+			}
+		}
+	}
+
+	// ⭐ 应用归档规则：仅对收件箱新邮件生效（本地归档，不动服务器端邮件）。
+	// 正文/附件已入库，body / has_attachment 条件可用。命中即改写 folder。
+	if f.folder == models.FolderInbox {
+		if result := rules.NewEngine(f.db).Apply(client.Account.ID, mailObj); result.FolderSlug != "" {
+			if err := f.db.Model(mailObj).Update("folder", result.FolderSlug).Error; err != nil {
+				log.Printf("⚠️  归档规则写入目录失败 (mail_id=%d): %v", mailObj.ID, err)
+			} else {
+				mailObj.Folder = result.FolderSlug
+				log.Printf("📁 [%s] 邮件归档至自定义目录 %q (rule_id=%d)", client.Account.Email, result.FolderSlug, result.RuleID)
 			}
 		}
 	}
