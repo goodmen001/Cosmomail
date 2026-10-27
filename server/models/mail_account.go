@@ -19,9 +19,9 @@ import (
 // 通过 GORM 钩子实现写入时自动加密、读取时自动解密，业务层无需关心。
 type MailAccount struct {
 	ID           uint       `json:"id" gorm:"primaryKey"`
-	UserID       uint       `json:"-" gorm:"index;not null;default:0;comment:所属用户ID(数据隔离)"`
+	UserID       uint       `json:"-" gorm:"index;not null;default:0;uniqueIndex:idx_account_user_email;comment:所属用户ID(数据隔离)"`
 	Name         string     `json:"name" gorm:"type:varchar(100);not null;comment:显示名称"`
-	Email        string     `json:"email" gorm:"type:varchar(255);not null;uniqueIndex;comment:邮箱地址"`
+	Email        string     `json:"email" gorm:"type:varchar(255);not null;uniqueIndex:idx_account_user_email;comment:邮箱地址(同一用户内唯一)"`
 	Protocol     string     `json:"protocol" gorm:"type:varchar(10);not null;default:'imap';comment:邮件协议(imap/pop3)"`
 	ImapHost     string     `json:"host" gorm:"type:varchar(255);not null;comment:收信服务器地址"`
 	Port         int        `json:"port" gorm:"default:993;comment:收信端口"`
