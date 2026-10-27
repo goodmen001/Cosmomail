@@ -38,7 +38,13 @@ if [ ! -x "${FNPACK}" ]; then
     mkdir -p "$(dirname "${FNPACK}")"
     URL="https://static2.fnnas.com/fnpack/fnpack-${FNPACK_VERSION}-${HOST_OS}-${FNPACK_ARCH}"
     echo "▶ 下载 fnpack: ${URL}"
-    curl -fsSL -o "${FNPACK}" "${URL}" || { echo "✗ fnpack 下载失败（可手动放置到 ${FNPACK}）"; exit 1; }
+    # 官方源只保留部分版本，新版本 404 时回退到最近可用版本（打包器与版本号无关）
+    if ! curl -fsSL -o "${FNPACK}" "${URL}"; then
+        echo "▷ 指定版本不可用，回退到最近可用版本 fnpack-1.2.0"
+        FNPACK="${PROJECT_ROOT}/.tools/fnpack-1.2.0-${HOST_OS}-${FNPACK_ARCH}"
+        curl -fsSL -o "${FNPACK}" "https://static2.fnnas.com/fnpack/fnpack-1.2.0-${HOST_OS}-${FNPACK_ARCH}" \
+            || { echo "✗ fnpack 下载失败（可手动放置到 ${FNPACK}）"; exit 1; }
+    fi
     chmod +x "${FNPACK}"
 fi
 
