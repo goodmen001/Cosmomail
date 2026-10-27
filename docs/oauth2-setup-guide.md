@@ -1,14 +1,14 @@
 # OAuth2 配置指南
 
-本文档介绍 Cosmo Mail 的 OAuth2 认证系统配置，包括 Azure AD 应用注册、环境变量设置和故障排查。
+本文档介绍 NovaMail 的 OAuth2 认证系统配置，包括 Azure AD 应用注册、环境变量设置和故障排查。
 
 ## 概述
 
-Cosmo Mail 支持 **设备码流 (Device Code Flow)** OAuth2 授权方式，目前优先支持 **Microsoft Outlook / Hotmail** 邮箱的 XOAUTH2 IMAP 登录。
+NovaMail 支持 **设备码流 (Device Code Flow)** OAuth2 授权方式，目前优先支持 **Microsoft Outlook / Hotmail** 邮箱的 XOAUTH2 IMAP 登录。
 
 > **为什么需要 OAuth2？**
 > 微软自 2022 年起已逐步禁用传统「应用密码」方式的 IMAP/SMTP Basic Auth，
-> 要求所有第三方应用使用 OAuth2 进行认证。Cosmo Mail 通过设备码流实现这一过程，
+> 要求所有第三方应用使用 OAuth2 进行认证。NovaMail 通过设备码流实现这一过程，
 > 无需配置回调 URL，用户只需在浏览器中输入验证码即可完成授权。
 
 ## 架构概览
@@ -32,7 +32,7 @@ Cosmo Mail 支持 **设备码流 (Device Code Flow)** OAuth2 授权方式，目�
 | 优先级 | 来源 | 说明 |
 |--------|------|------|
 | 1（最高） | 用户在 UI 中自定义 | 高级用户可指定自己的 Client ID |
-| 2（中等） | 环境变量 `COSMOMAIL_OAUTH_MICROSOFT_CLIENT_ID` | 部署者可覆盖默认值 |
+| 2（中等） | 环境变量 `NOVAMAIL_OAUTH_MICROSOFT_CLIENT_ID` | 部署者可覆盖默认值 |
 | 3（兜底） | 开发者硬编码默认值 | 内置在代码中 |
 
 ---
@@ -49,7 +49,7 @@ Cosmo Mail 支持 **设备码流 (Device Code Flow)** OAuth2 授权方式，目�
 1. 导航到 **Microsoft Entra ID** → **应用注册**（或搜索 "App registrations"）
 2. 点击 **新注册 (+)**
 3. 填写：
-   - **名称**: `Cosmo Mail OAuth`（或任意你喜欢的名字）
+   - **名称**: `NovaMail OAuth`（或任意你喜欢的名字）
    - **支持的账户类型**: 选择 **任何组织目录(任何 Microsoft Entra 目录 - 租户)中的帐户和个人 Microsoft 帐户**
      > ⚠️ 必须选择包含「个人 Microsoft 账号」的选项，否则无法授权 @outlook.com / @hotmail.com 个人邮箱
 4. 点击 **注册**
@@ -110,7 +110,7 @@ Graph Token 无法用于 IMAP XOAUTH2 认证，会导致 `NO AUTHENTICATE failed
 
 ```bash
 # 在 .env 文件或启动命令中设置
-export COSMOMAIL_OAUTH_MICROSOFT_CLIENT_ID="your-client-id-here"
+export NOVAMAIL_OAUTH_MICROSOFT_CLIENT_ID="your-client-id-here"
 ```
 
 ### 方式 B：修改源码默认值
@@ -173,7 +173,7 @@ const microsoftDefaultClientID = "YOUR_ACTUAL_CLIENT_ID_HERE"
 
 **原因:** Client ID 无效或未正确配置
 **解决:**
-- 检查环境变量 `COSMOMAIL_OAUTH_MICROSOFT_CLIENT_ID`
+- 检查环境变量 `NOVAMAIL_OAUTH_MICROSOFT_CLIENT_ID`
 - 确认 Azure AD 应用已启用「个人 Microsoft 账号」支持
 - 确认应用未被禁用或删除
 
@@ -211,8 +211,8 @@ const microsoftDefaultClientID = "YOUR_ACTUAL_CLIENT_ID_HERE"
 **排查方法:**
 ```bash
 # 查看服务端日志
-grep "XOAUTH2" cosmomail.log
-grep "RefreshToken" cosmomail.log
+grep "XOAUTH2" novamail.log
+grep "RefreshToken" novamail.log
 ```
 
 ### Q: 国内网络无法连接微软 OAuth2 端点
@@ -245,7 +245,7 @@ type GoogleProvider struct{}
 func NewGoogleProvider() *GoogleProvider { return &GoogleProvider{} }
 func (p *GoogleProvider) Name() string { return "google" }
 func (p *GoogleProvider) DefaultClientID() string { return "YOUR_GOOGLE_CLIENT_ID" }
-func (p *GoogleProvider) EnvVarName() string { return "COSMOMAIL_OAUTH_GOOGLE_CLIENT_ID" }
+func (p *GoogleProvider) EnvVarName() string { return "NOVAMAIL_OAUTH_GOOGLE_CLIENT_ID" }
 // ... 实现其余接口方法
 ```
 

@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"cosmomail/config"
-	"cosmomail/contacts"
-	"cosmomail/models"
-	"cosmomail/rules"
-	"cosmomail/storage"
+	"novamail/config"
+	"novamail/contacts"
+	"novamail/models"
+	"novamail/rules"
+	"novamail/storage"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/encoding/unicode"
@@ -324,7 +324,7 @@ func (f *Fetcher) parseMessage(client *IMAPClient, buf *imapclient.FetchMessageB
 	if messageID == "" {
 		// 无 Message-ID 时使用稳定键（account_id + folder + uid），
 		// 避免使用 time.Now() 导致每次同步生成不同 ID 从而去重失败
-		messageID = fmt.Sprintf("<auto-account-%d-folder-%s-uid-%d@cosmomail>", client.Account.ID, f.folder, buf.UID)
+		messageID = fmt.Sprintf("<auto-account-%d-folder-%s-uid-%d@novamail>", client.Account.ID, f.folder, buf.UID)
 	}
 
 	// Use the indexed IMAP identity for deduplication. Message-ID is not unique

@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"cosmomail/models"
-	"cosmomail/notifier"
-	"cosmomail/services"
+	"novamail/models"
+	"novamail/notifier"
+	"novamail/services"
 
 	"github.com/gofiber/fiber/v2"
 )

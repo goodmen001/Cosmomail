@@ -1,38 +1,38 @@
 services:
-  cosmomail:
+  novamail:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         APP_VERSION: ${APP_VERSION:-latest}
-    image: cosmomail:latest
-    container_name: cosmomail
+    image: novamail:latest
+    container_name: novamail
     restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
       # 监听配置
-      COSMOMAIL_HOST: 0.0.0.0
-      COSMOMAIL_PORT: 8080
-      COSMOMAIL_DSN: /app/data/cosmomail.db
+      NOVAMAIL_HOST: 0.0.0.0
+      NOVAMAIL_PORT: 8080
+      NOVAMAIL_DSN: /app/data/novamail.db
       TZ: ${TZ:-Asia/Shanghai}
 
       # 安全配置（可选：首次启动自动生成并持久化到数据库）
       # JWT 签名密钥，用于登录会话
-      # COSMOMAIL_JWT_SECRET: change-me-to-a-long-random-string
+      # NOVAMAIL_JWT_SECRET: change-me-to-a-long-random-string
       # 敏感字段（密码/Token）AES-256-GCM 加密密钥
-      # COSMOMAIL_ENCRYPT_KEY: change-me-to-another-long-random-string
+      # NOVAMAIL_ENCRYPT_KEY: change-me-to-another-long-random-string
 
       # Outlook / Microsoft OAuth2 默认 Client ID
       # 在 Azure 注册应用后填入（详见 docs/guide/oauth2-microsoft.md）
-      # COSMOMAIL_OAUTH_MICROSOFT_CLIENT_ID: your-azure-client-id
+      # NOVAMAIL_OAUTH_MICROSOFT_CLIENT_ID: your-azure-client-id
 
       # 同步配置
-      # COSMOMAIL_POLL_INTERVAL: 60
-      # COSMOMAIL_IDLE_ENABLED: "true"
-      # COSMOMAIL_MAX_CONCURRENT: 10
+      # NOVAMAIL_POLL_INTERVAL: 60
+      # NOVAMAIL_IDLE_ENABLED: "true"
+      # NOVAMAIL_MAX_CONCURRENT: 10
     volumes:
-      - cosmomail-data:/app/data
+      - novamail-data:/app/data
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
       interval: 30s
@@ -41,4 +41,4 @@ services:
       retries: 3
 
 volumes:
-  cosmomail-data:
+  novamail-data:

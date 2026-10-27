@@ -19,11 +19,11 @@ type IMAPConfig struct {
 ```
 
 **环境变量支持**（单位统一为 **MB**）：
-- `COSMOMAIL_AUTO_CACHE` — 是否启用自动缓存（`true`/`1` 开启，默认关闭）
-- `COSMOMAIL_MAX_ATTACHMENT_SIZE` (MB)
-- `COSMOMAIL_MIN_DISK_FREE` (MB)
-- `COSMOMAIL_CACHE_THRESHOLD` (MB)
-- `COSMOMAIL_CACHE_EXPIRE_DAYS` (天)
+- `NOVAMAIL_AUTO_CACHE` — 是否启用自动缓存（`true`/`1` 开启，默认关闭）
+- `NOVAMAIL_MAX_ATTACHMENT_SIZE` (MB)
+- `NOVAMAIL_MIN_DISK_FREE` (MB)
+- `NOVAMAIL_CACHE_THRESHOLD` (MB)
+- `NOVAMAIL_CACHE_EXPIRE_DAYS` (天)
 
 ---
 
@@ -146,26 +146,26 @@ func Download(c *fiber.Ctx) error {
 ### 生产环境（推荐）
 ```bash
 # 30GB VPS 的保守配置
-export COSMOMAIL_AUTO_CACHE=true           # 开启自动缓存
-export COSMOMAIL_MAX_ATTACHMENT_SIZE=50     # 50MB 单附件上限
-export COSMOMAIL_MIN_DISK_FREE=5120        # 保留 5GB 空闲
-export COSMOMAIL_CACHE_THRESHOLD=2         # 2MB 以上懒加载
-export COSMOMAIL_CACHE_EXPIRE_DAYS=30      # 30天后清理缓存
+export NOVAMAIL_AUTO_CACHE=true           # 开启自动缓存
+export NOVAMAIL_MAX_ATTACHMENT_SIZE=50     # 50MB 单附件上限
+export NOVAMAIL_MIN_DISK_FREE=5120        # 保留 5GB 空闲
+export NOVAMAIL_CACHE_THRESHOLD=2         # 2MB 以上懒加载
+export NOVAMAIL_CACHE_EXPIRE_DAYS=30      # 30天后清理缓存
 ```
 
 ### 开发环境（宽松模式）
 ```bash
-export COSMOMAIL_AUTO_CACHE=true           # 开启自动缓存
-export COSMOMAIL_MAX_ATTACHMENT_SIZE=0     # 不限制大小
-export COSMOMAIL_MIN_DISK_FREE=1024        # 只保留 1GB
-export COSMOMAIL_CACHE_THRESHOLD=10        # 10MB 以上懒加载（方便调试）
+export NOVAMAIL_AUTO_CACHE=true           # 开启自动缓存
+export NOVAMAIL_MAX_ATTACHMENT_SIZE=0     # 不限制大小
+export NOVAMAIL_MIN_DISK_FREE=1024        # 只保留 1GB
+export NOVAMAIL_CACHE_THRESHOLD=10        # 10MB 以上懒加载（方便调试）
 ```
 
 ### 小机器模式（纯懒加载，不占磁盘）
 ```bash
-export COSMOMAIL_AUTO_CACHE=false          # 关闭自动缓存！
-export COSMOMAIL_CACHE_THRESHOLD=0         # 全部懒加载
-export COSMOMAIL_MIN_DISK_FREE=512         # 保留 512MB 即可
+export NOVAMAIL_AUTO_CACHE=false          # 关闭自动缓存！
+export NOVAMAIL_CACHE_THRESHOLD=0         # 全部懒加载
+export NOVAMAIL_MIN_DISK_FREE=512         # 保留 512MB 即可
 ```
 
 ---
@@ -176,7 +176,7 @@ export COSMOMAIL_MIN_DISK_FREE=512         # 保留 512MB 即可
 ```
 用户发送 50MB 附件 → QQ邮箱服务器
                          ↓
-              Cosmo Mail 同步时全部下载到本地磁盘
+              NovaMail 同步时全部下载到本地磁盘
                          ↓
               用户点击下载 → 从本地磁盘返回
 
@@ -187,11 +187,11 @@ export COSMOMAIL_MIN_DISK_FREE=512         # 保留 512MB 即可
 ```
 用户发送 50MB 附件 → QQ邮箱服务器
                          ↓
-         Cosmo Mail 同步时只保存元数据:
+         NovaMail 同步时只保存元数据:
          { filename: "report.pdf", size: 50MB,
            imap_uid: 123, part_id: "2", is_cached: false }
 
-用户点击下载 → Cosmo Mail 临时连接 QQ邮箱 IMAP
+用户点击下载 → NovaMail 临时连接 QQ邮箱 IMAP
              → 请求 BODY[2] 获取 PDF 内容
              → 流式传输给浏览器（不落盘）
              │
@@ -220,7 +220,7 @@ export COSMOMAIL_MIN_DISK_FREE=512         # 保留 512MB 即可
 每次懒加载下载需要建立临时 IMAP 连接（~100ms 开销）。对于频繁访问的场景，可以启用自动缓存。
 
 ### 2. 自动缓存机制
-- **默认关闭**（`COSMOMAIL_AUTO_CACHE=false`），需手动开启
+- **默认关闭**（`NOVAMAIL_AUTO_CACHE=false`），需手动开启
 - 使用 `io.TeeReader` + `io.Pipe` 实现流式传输的同时异步写入缓存
 - 不阻塞用户的下载体验（缓存写入在后台 goroutine 完成）
 
@@ -254,11 +254,11 @@ POP3 不支持部分获取，POP3 账号仍需使用旧的全量下载模式。�
 如需回退到旧的全量下载模式：
 ```bash
 # 方式1: 设置极大的缓存阈值（等于全量缓存）
-export COSMOMAIL_CACHE_THRESHOLD=999999
+export NOVAMAIL_CACHE_THRESHOLD=999999
 
 # 方式2: 关闭自动缓存 + 设置极大阈值（纯懒加载）
-export COSMOMAIL_AUTO_CACHE=false
-export COSMOMAIL_CACHE_THRESHOLD=0
+export NOVAMAIL_AUTO_CACHE=false
+export NOVAMAIL_CACHE_THRESHOLD=0
 
 # 方式3: 代码层面注释掉 shouldLazyLoad 分支（fetcher.go L389-L401）
 ```

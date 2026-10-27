@@ -4,9 +4,9 @@
 package handlers
 
 import (
-	"cosmomail/models"
-	"cosmomail/oauth2"
-	"cosmomail/services"
+	"novamail/models"
+	"novamail/oauth2"
+	"novamail/services"
 	"strconv"
 	"time"
 

@@ -10,7 +10,7 @@ package rules
 import (
 	"strings"
 
-	"cosmomail/models"
+	"novamail/models"
 
 	"gorm.io/gorm"
 )

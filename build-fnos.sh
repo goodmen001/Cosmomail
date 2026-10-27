@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Cosmo Mail 飞牛 fnOS 安装包（fpk）构建脚本（Linux/macOS）
+# NovaMail 飞牛 fnOS 安装包（fpk）构建脚本（Linux/macOS）
 # 用法: ./build-fnos.sh [BinaryPath]
-#   BinaryPath 默认 bin/cosmomail-linux-amd64（先执行 ./build.sh linux amd64）
+#   BinaryPath 默认 bin/novamail-linux-amd64（先执行 ./build.sh linux amd64）
 # Windows 用户请使用 build-fnos.ps1
 # ============================================================================
 set -euo pipefail
 
-BINARY_PATH="${1:-bin/cosmomail-linux-amd64}"
+BINARY_PATH="${1:-bin/novamail-linux-amd64}"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_DIR="${PROJECT_ROOT}/fnapp"
 # 版本号自动从 version.json 读取（单一版本源）
@@ -52,7 +52,7 @@ fi
 SERVER_DIR="${PACKAGE_DIR}/app/server"
 UI_IMAGES_DIR="${PACKAGE_DIR}/app/ui/images"
 mkdir -p "${SERVER_DIR}" "${UI_IMAGES_DIR}"
-cp "${PROJECT_ROOT}/${BINARY_PATH}" "${SERVER_DIR}/cosmomail"
+cp "${PROJECT_ROOT}/${BINARY_PATH}" "${SERVER_DIR}/novamail"
 cp "${PROJECT_ROOT}/public/images/icon_64.png" "${UI_IMAGES_DIR}/icon-64.png"
 cp "${PROJECT_ROOT}/public/images/icon_256.png" "${UI_IMAGES_DIR}/icon-256.png"
 cp "${PROJECT_ROOT}/public/images/icon_64.png" "${PACKAGE_DIR}/ICON.PNG"
@@ -70,7 +70,7 @@ echo "▶ manifest 版本已同步: ${VERSION}"
     "${FNPACK}" build
 )
 
-RAW_PACKAGE="${PACKAGE_DIR}/com.goodmen001.cosmomail.fpk"
+RAW_PACKAGE="${PACKAGE_DIR}/com.goodmen001.novamail.fpk"
 if [ ! -f "${RAW_PACKAGE}" ]; then
     echo "✗ fnpack 未生成 fpk 文件"
     exit 1

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Cosmo Mail</string>
-    <string name="title_activity_main">Cosmo Mail</string>
-    <string name="package_name">com.goodmen001.cosmomail</string>
-    <string name="custom_url_scheme">com.goodmen001.cosmomail</string>
+    <string name="app_name">NovaMail</string>
+    <string name="title_activity_main">NovaMail</string>
+    <string name="package_name">com.goodmen001.novamail</string>
+    <string name="custom_url_scheme">com.goodmen001.novamail</string>
 </resources>

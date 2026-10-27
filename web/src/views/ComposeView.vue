@@ -602,13 +602,13 @@ onMounted(async () => {
   if (route.query.accountId) form.value.account_id = route.query.accountId
   // 回复引用原文（由 MailReaderView 在跳转前写入 sessionStorage）
   try {
-    const rawQuote = sessionStorage.getItem('cosmomail-reply-quote')
+    const rawQuote = sessionStorage.getItem('novamail-reply-quote')
     if (rawQuote && route.query.replyTo) {
       const quote = JSON.parse(rawQuote)
-      sessionStorage.removeItem('cosmomail-reply-quote')
+      sessionStorage.removeItem('novamail-reply-quote')
       const quoteHtml = quote.htmlBody
-        ? `<br><br><div class="cosmomail-quote" style="margin:0;padding-left:12px;border-left:3px solid #ddd;color:#666;"><div>${quote.header}</div><blockquote style="margin:8px 0 0;">${quote.htmlBody}</blockquote></div>`
-        : `<br><br><div class="cosmomail-quote" style="margin:0;padding-left:12px;border-left:3px solid #ddd;color:#666;"><div>${quote.header}</div><blockquote style="margin:8px 0 0;white-space:pre-wrap;">${escapeHtml(quote.textBody || '')}</blockquote></div>`
+        ? `<br><br><div class="novamail-quote" style="margin:0;padding-left:12px;border-left:3px solid #ddd;color:#666;"><div>${quote.header}</div><blockquote style="margin:8px 0 0;">${quote.htmlBody}</blockquote></div>`
+        : `<br><br><div class="novamail-quote" style="margin:0;padding-left:12px;border-left:3px solid #ddd;color:#666;"><div>${quote.header}</div><blockquote style="margin:8px 0 0;white-space:pre-wrap;">${escapeHtml(quote.textBody || '')}</blockquote></div>`
       form.value.html_body = quoteHtml
       form.value.body = `\n\n${quote.header}\n${(quote.textBody || '').split('\n').map(l => '> ' + l).join('\n')}`
       editorMode.value = 'rich'

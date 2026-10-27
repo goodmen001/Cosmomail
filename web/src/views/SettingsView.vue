@@ -25,6 +25,25 @@
           </button>
         </div>
 
+        <!-- 皮肤选择 -->
+        <div class="skin-section">
+          <div class="section-subtitle">界面皮肤</div>
+          <p class="color-desc">三套整体视觉风格，可自由切换；与明暗模式、主题色叠加生效</p>
+          <div class="skin-options">
+            <button
+              v-for="s in skins"
+              :key="s.value"
+              class="skin-option"
+              :class="{ active: currentSkin === s.value }"
+              @click="handleSkinChange(s.value)"
+            >
+              <span class="skin-preview" :class="'skin-preview-' + s.value"></span>
+              <span class="skin-label">{{ s.label }}</span>
+              <span class="skin-desc">{{ s.desc }}</span>
+            </button>
+          </div>
+        </div>
+
         <!-- 主题色选择 -->
         <div class="theme-color-section">
           <div class="section-subtitle">主题色</div>
@@ -460,7 +479,7 @@ Header: X-API-Token: &lt;你的token&gt;</pre>
         <div class="about-info">
           <div class="info-item">
             <span>应用名称</span>
-            <span><strong>Cosmo Mail</strong></span>
+            <span><strong>NovaMail</strong></span>
           </div>
           <div class="info-item">
             <span>当前版本</span>
@@ -522,7 +541,7 @@ defineOptions({ name: 'Settings' })
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from '@/stores/appStore'
 import { useAuthStore } from '@/stores/authStore'
-import { PRESET_COLORS, POLL_INTERVAL_OPTIONS, PAGE_SIZE_OPTIONS } from '@/stores/appStore'
+import { PRESET_COLORS, POLL_INTERVAL_OPTIONS, PAGE_SIZE_OPTIONS, SKINS } from '@/stores/appStore'
 import { useSSE } from '@/composables/useSSE'
 import { useToast } from '@/composables/useToast'
 import { useUpdateCheck } from '@/composables/useUpdateCheck'
@@ -730,6 +749,8 @@ const {
 // --- 主题 & 通知 ---
 const currentTheme = computed(() => appStore.themeMode)
 const currentPrimaryColor = computed(() => appStore.primaryColor)
+const currentSkin = computed(() => appStore.skin)
+const skins = SKINS
 const presetColors = PRESET_COLORS
 
 // Web Push 离线推送（完整实现）
@@ -1041,6 +1062,12 @@ function setTheme(mode) {
   appStore.setTheme(mode)
 }
 
+// --- 皮肤 ---
+function handleSkinChange(value) {
+  appStore.setSkin(value)
+  toast.success('皮肤已切换：' + (skins.find(s => s.value === value)?.label || value))
+}
+
 // --- 主题色 ---
 const isCustomColor = computed(() => !presetColors.some(c => c.value === currentPrimaryColor.value))
 
@@ -1175,6 +1202,74 @@ async function clearCache() {
   font-size: var(--font-size-sm);
   color: var(--text-tertiary);
   margin-bottom: var(--space-lg);
+}
+
+/* ---- 皮肤选择器 ---- */
+.skin-section {
+  margin-bottom: var(--space-lg);
+}
+.skin-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+}
+.skin-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--border-color);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--text-primary);
+}
+.skin-option:hover {
+  border-color: var(--primary-300);
+  transform: translateY(-2px);
+}
+.skin-option.active {
+  border-color: var(--primary-500);
+  background: var(--mail-selected-bg);
+  box-shadow: 0 0 0 3px var(--shadow-glow);
+}
+.skin-preview {
+  width: 100%;
+  height: 56px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+}
+.skin-preview-aurora {
+  background:
+    radial-gradient(60% 80% at 25% 30%, rgba(88,101,242,.6), transparent 65%),
+    radial-gradient(50% 70% at 75% 20%, rgba(46,213,196,.45), transparent 60%),
+    radial-gradient(55% 70% at 70% 85%, rgba(147,51,234,.5), transparent 60%),
+    #0a1020;
+}
+.skin-preview-obsidian {
+  background:
+    radial-gradient(70% 90% at 80% 0%, rgba(0,180,216,.5), transparent 55%),
+    radial-gradient(55% 70% at 0% 100%, rgba(30,64,175,.55), transparent 55%),
+    #08090c;
+}
+.skin-preview-moonlight {
+  background:
+    radial-gradient(50% 70% at 15% 20%, rgba(167,199,255,.8), transparent 60%),
+    radial-gradient(45% 65% at 85% 15%, rgba(255,214,235,.85), transparent 60%),
+    radial-gradient(55% 75% at 75% 90%, rgba(180,255,236,.8), transparent 60%),
+    #f4f2ee;
+}
+.skin-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+.skin-desc {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-align: center;
+  line-height: 1.4;
 }
 
 /* ---- 主题选择器 ---- */

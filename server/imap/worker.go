@@ -17,11 +17,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"cosmomail/config"
-	"cosmomail/models"
-	"cosmomail/notifier"
-	pop3pkg "cosmomail/pop3"
-	"cosmomail/sse"
+	"novamail/config"
+	"novamail/models"
+	"novamail/notifier"
+	pop3pkg "novamail/pop3"
+	"novamail/sse"
 
 	"github.com/emersion/go-imap/v2/imapclient"
 	"gorm.io/gorm"

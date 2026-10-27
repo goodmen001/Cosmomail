@@ -24,6 +24,23 @@ export const PAGE_SIZE_OPTIONS = [
   { value: 100, label: '100 封/页' },
 ]
 
+// 皮肤（整体视觉风格）选项
+// aurora   = 方案 A · 极光玻璃（深色玻璃 + 极光渐变）
+// obsidian = 方案 B · 曜石暗黑（黑色 HUD + 青色辉光）
+// moonlight= 方案 C · 月白玻璃（浅色苹果风玻璃 + 马卡龙渐变）
+export const SKINS = [
+  { value: 'aurora',    label: '极光玻璃', desc: '深色玻璃质感，流动极光背景' },
+  { value: 'obsidian',  label: '曜石暗黑', desc: '科技 HUD 风格，霓虹辉光线条' },
+  { value: 'moonlight', label: '月白玻璃', desc: '浅色苹果风玻璃，柔和马卡龙光晕' },
+]
+
+// 各皮肤配套的默认主题色（切换皮肤时若用户未自定义过则跟随皮肤）
+const SKIN_DEFAULT_PRIMARY = {
+  aurora:    '#4F6EF7',
+  obsidian:  '#00B4D8',
+  moonlight: '#6D8DFF',
+}
+
 // 预设主题色选项
 export const PRESET_COLORS = [
   { value: '#4F6EF7', label: '默认蓝' },
@@ -271,6 +288,7 @@ export const useAppStore = defineStore('app', () => {
   const themeMode = ref('system') // 'light' | 'dark' | 'system'
   const isDark = ref(false)
   const primaryColor = ref(DEFAULT_PRIMARY)
+  const skin = ref('aurora') // 'aurora' | 'obsidian' | 'moonlight'
   const searchKeyword = ref('')
   const isLoading = ref(false)
   const unreadCount = ref(0)
@@ -302,6 +320,12 @@ export const useAppStore = defineStore('app', () => {
     const savedColor = localStorage.getItem('primary-color')
     if (savedColor && isValidColor(savedColor)) {
       primaryColor.value = savedColor
+    }
+
+    // 加载皮肤（默认极光玻璃；旧值兜底迁移）
+    const savedSkin = localStorage.getItem('skin')
+    if (savedSkin && SKINS.some(s => s.value === savedSkin)) {
+      skin.value = savedSkin
     }
 
     // 加载邮件渲染设置
@@ -338,6 +362,7 @@ export const useAppStore = defineStore('app', () => {
 
     applyTheme()
     applyPrimaryColor()
+    applySkin()
 
     if (window.matchMedia) {
       window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
@@ -386,6 +411,27 @@ export const useAppStore = defineStore('app', () => {
     if (!isValidColor(hex)) return
     primaryColor.value = hex.toUpperCase()
     applyPrimaryColor()
+  }
+
+  // --- 应用皮肤（data-skin 属性驱动 styles/skins.css 中的令牌层）---
+  function applySkin() {
+    document.documentElement.setAttribute('data-skin', skin.value)
+    localStorage.setItem('skin', skin.value)
+    // 同步 meta theme-color
+    let metaTheme = document.querySelector('meta[name="theme-color"]')
+    if (metaTheme) metaTheme.content = primaryColor.value
+  }
+
+  function setSkin(value) {
+    if (!SKINS.some(s => s.value === value)) return
+    const changed = skin.value !== value
+    skin.value = value
+    applySkin()
+    // 切换皮肤时跟随皮肤默认主题色（保留用户明暗模式选择）
+    if (changed && SKIN_DEFAULT_PRIMARY[value]) {
+      primaryColor.value = SKIN_DEFAULT_PRIMARY[value]
+      applyPrimaryColor()
+    }
   }
 
   // --- 切换主题 ---
@@ -451,11 +497,11 @@ export const useAppStore = defineStore('app', () => {
   }
 
   return {
-    themeMode, isDark, primaryColor, searchKeyword, isLoading, unreadCount,
+    themeMode, isDark, primaryColor, skin, searchKeyword, isLoading, unreadCount,
     mailButtonCenter, mailLoadImages, mailFontSize, mailRenderMode, mailPageSize,
     pollInterval, connectionMode, lastRefreshAt,
     MAIL_FONT_SIZES,
-    initTheme, toggleTheme, setTheme, setPrimaryColor, isValidColor,
+    initTheme, toggleTheme, setTheme, setPrimaryColor, setSkin, isValidColor,
     setMailButtonCenter, setMailLoadImages, setMailFontSize, setMailRenderMode, setMailPageSize,
     setPollInterval, setConnectionMode, touchRefresh,
     setSearchKeyword, setLoading, setUnreadCount,

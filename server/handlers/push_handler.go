@@ -4,7 +4,7 @@
 package handlers
 
 import (
-	"cosmomail/services"
+	"novamail/services"
 
 	"github.com/gofiber/fiber/v2"
 )

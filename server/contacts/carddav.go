@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"cosmomail/models"
+	"novamail/models"
 )
 
 // CardDAVConfig 用户的 CardDAV 连接配置（存于邮箱账号上）

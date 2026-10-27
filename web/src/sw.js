@@ -1,4 +1,4 @@
-// Cosmo Mail Service Worker
+// NovaMail Service Worker
 // 处理 Web Push 推送事件 + Workbox 预缓存
 
 import { precacheAndRoute } from 'workbox-precaching'
@@ -11,7 +11,7 @@ precacheAndRoute(self.__WB_MANIFEST)
 
 // --- Push 事件：收到服务端推送时显示系统通知 ---
 self.addEventListener('push', (event) => {
-  let data = { title: 'Cosmo Mail', body: '您有新消息', icon: '/icons/icon-192x192.png' }
+  let data = { title: 'NovaMail', body: '您有新消息', icon: '/icons/icon-192x192.png' }
 
   if (event.data) {
     try {
@@ -26,7 +26,7 @@ self.addEventListener('push', (event) => {
     icon: data.icon || '/icons/icon-192x192.png',
     badge: '/icons/icon-72x72.png',
     vibrate: [200, 100, 200],
-    tag: data.tag || 'cosmomail-mail',
+    tag: data.tag || 'novamail-mail',
     requireInteraction: true,
     data: data.data || {},
     actions: [
@@ -36,7 +36,7 @@ self.addEventListener('push', (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Cosmo Mail', options).then(() => {
+    self.registration.showNotification(data.title || 'NovaMail', options).then(() => {
       // 通知所有打开的页面刷新未读数/角标（页面收到后拉取 /mails/stats 更新桌面角标）
       return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
         for (const client of clientList) {

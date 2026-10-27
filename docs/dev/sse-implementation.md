@@ -270,7 +270,7 @@ cd web && pnpm build
 ```
 
 ### 功能测试步骤
-1. 启动服务: `./bin/cosmomail`
+1. 启动服务: `./bin/novamail`
 2. 登录 Web UI: http://localhost:8080
 3. 添加 IMAP 邮箱账号并激活
 4. 发送测试邮件到该邮箱

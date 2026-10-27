@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode"
 
-	"cosmomail/models"
+	"novamail/models"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"

@@ -5,8 +5,8 @@ package services
 
 import (
 	"log"
-	"cosmomail/crypto"
-	"cosmomail/models"
+	"novamail/crypto"
+	"novamail/models"
 
 	"gorm.io/gorm"
 )

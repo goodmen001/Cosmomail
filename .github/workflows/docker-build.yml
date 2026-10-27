@@ -98,11 +98,11 @@ jobs:
           VERSION=$(node -p "require('./version.json').latest.replace(/^v/,'')")
           cd server && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
             go build -trimpath \
-            -ldflags "-s -w -X cosmomail/buildinfo.Version=${VERSION} -X main.isProduction=true" \
-            -o ../bin/cosmomail-linux-amd64 .
+            -ldflags "-s -w -X novamail/buildinfo.Version=${VERSION} -X main.isProduction=true" \
+            -o ../bin/novamail-linux-amd64 .
 
       - name: Build fnOS package
-        run: ./build-fnos.sh bin/cosmomail-linux-amd64
+        run: ./build-fnos.sh bin/novamail-linux-amd64
 
       - name: Upload fpk to Release
         uses: softprops/action-gh-release@v2

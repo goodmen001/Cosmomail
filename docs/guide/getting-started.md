@@ -8,7 +8,7 @@ Linux 或 macOS：
 curl -fsSL https://raw.githubusercontent.com/goodmen001/Cosmomail/main/deploy.sh | sudo bash
 ```
 
-Windows 请下载 Release 中的 `cosmomail.exe` 直接运行。
+Windows 请下载 Release 中的 `novamail.exe` 直接运行。
 
 ## 2. 打开界面
 
@@ -21,8 +21,8 @@ Windows 请下载 Release 中的 `cosmomail.exe` 直接运行。
 ## 4. 管理服务
 
 ```bash
-cosmomail status
-cosmomail logs
-cosmomail restart
-cosmomail doctor
+novamail status
+novamail logs
+novamail restart
+novamail doctor
 ```

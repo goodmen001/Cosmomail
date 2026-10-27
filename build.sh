@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Cosmo Mail 生产构建脚本
+# NovaMail 生产构建脚本
 # 用法: ./build.sh [GOOS] [GOARCH] [GOARM]
 #   不带参数      - 构建全平台版本 (linux/amd64, linux/arm, linux/arm64,
 #                  darwin/arm64, windows/amd64) → bin/
@@ -33,12 +33,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVER_DIR="${SCRIPT_DIR}/server"
 WEB_DIR="${SCRIPT_DIR}/web"
 OUTPUT_DIR="${SCRIPT_DIR}/bin"
-BINARY_NAME="cosmomail"
+BINARY_NAME="novamail"
 
 print_banner() {
     echo -e "${CYAN}${BOLD}"
     echo "╔══════════════════════════════════════════╗"
-    echo "║       Cosmo Mail 构建工具                     ║"
+    echo "║       NovaMail 构建工具                     ║"
     echo "╚══════════════════════════════════════════╝"
     echo -e "${NC}"
 }
@@ -140,7 +140,7 @@ build_single_platform() {
 
     local app_version
     app_version="$(node -p "require('${SCRIPT_DIR}/version.json').latest.replace(/^v/, '')")"
-    local ldflags="-s -w -X cosmomail/buildinfo.Version=${app_version} -X main.isProduction=true"
+    local ldflags="-s -w -X novamail/buildinfo.Version=${app_version} -X main.isProduction=true"
 
     # 确定输出文件名
     local output="${OUTPUT_DIR}/${BINARY_NAME}-${target_os}-${target_arch}"
@@ -233,7 +233,7 @@ cmd_build_single() {
 
     local app_version
     app_version="$(node -p "require('${SCRIPT_DIR}/version.json').latest.replace(/^v/, '')")"
-    local ldflags="-s -w -X cosmomail/buildinfo.Version=${app_version} -X main.isProduction=true"
+    local ldflags="-s -w -X novamail/buildinfo.Version=${app_version} -X main.isProduction=true"
 
     if [ -n "${target_os}" ]; then
         export GOOS="${target_os}"
@@ -314,11 +314,11 @@ cmd_help() {
   ./build.sh windows amd64        # Windows x86_64
 
 全平台构建输出:
-  bin/cosmomail-linux-amd64       Linux x86_64 服务器
-  bin/cosmomail-linux-arm         Linux ARM32 (armv7)
-  bin/cosmomail-linux-arm64       Linux ARM64 (树莓派4/5等)
-  bin/cosmomail-darwin-arm64      macOS Apple Silicon
-  bin/cosmomail-windows-amd64.exe Windows x86_64
+  bin/novamail-linux-amd64       Linux x86_64 服务器
+  bin/novamail-linux-arm         Linux ARM32 (armv7)
+  bin/novamail-linux-arm64       Linux ARM64 (树莓派4/5等)
+  bin/novamail-darwin-arm64      macOS Apple Silicon
+  bin/novamail-windows-amd64.exe Windows x86_64
 
 说明:
   - 前端产物通过 //go:embed 嵌入 Go 二进制，每个二进制独立完整

@@ -1,4 +1,4 @@
-# Cosmo Mail 多阶段构建
+# NovaMail 多阶段构建
 # 构建前端 → 嵌入 Go 二进制 → 最小运行镜像
 
 # ---------- 阶段 1：前端构建 ----------
@@ -32,31 +32,31 @@ COPY server/ ./
 ARG APP_VERSION=dev
 RUN CGO_ENABLED=0 GOOS=linux \
     go build -trimpath \
-    -ldflags "-s -w -X cosmomail/buildinfo.Version=${APP_VERSION} -X main.isProduction=true" \
-    -o /cosmomail .
+    -ldflags "-s -w -X novamail/buildinfo.Version=${APP_VERSION} -X main.isProduction=true" \
+    -o /novamail .
 
 # ---------- 阶段 3：运行镜像 ----------
 FROM alpine:3.20
 
 RUN apk add --no-cache ca-certificates tzdata \
-    && addgroup -S cosmomail && adduser -S cosmomail -G cosmomail
+    && addgroup -S novamail && adduser -S novamail -G novamail
 
 WORKDIR /app
-COPY --from=backend /cosmomail /app/cosmomail
+COPY --from=backend /novamail /app/novamail
 
-RUN mkdir -p /app/data && chown -R cosmomail:cosmomail /app
+RUN mkdir -p /app/data && chown -R novamail:novamail /app
 
-USER cosmomail
+USER novamail
 
-ENV COSMOMAIL_HOST=0.0.0.0 \
-    COSMOMAIL_PORT=8080 \
-    COSMOMAIL_DSN=/app/data/cosmomail.db \
+ENV NOVAMAIL_HOST=0.0.0.0 \
+    NOVAMAIL_PORT=8080 \
+    NOVAMAIL_DSN=/app/data/novamail.db \
     TZ=Asia/Shanghai
 
 VOLUME ["/app/data"]
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -qO- http://127.0.0.1:${COSMOMAIL_PORT}/health >/dev/null 2>&1 || exit 1
+    CMD wget -qO- http://127.0.0.1:${NOVAMAIL_PORT}/health >/dev/null 2>&1 || exit 1
 
-ENTRYPOINT ["/app/cosmomail"]
+ENTRYPOINT ["/app/novamail"]

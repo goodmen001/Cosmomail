@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"cosmomail/config"
-	"cosmomail/models"
+	"novamail/config"
+	"novamail/models"
 
 	"github.com/emersion/go-imap/v2"
 	"github.com/emersion/go-imap/v2/imapclient"

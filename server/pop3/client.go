@@ -14,9 +14,9 @@ import (
 	"strconv"
 	"strings"
 
-	"cosmomail/config"
-	"cosmomail/models"
-	"cosmomail/proxy"
+	"novamail/config"
+	"novamail/models"
+	"novamail/proxy"
 )
 
 // POP3Client 封装 POP3 客户端连接

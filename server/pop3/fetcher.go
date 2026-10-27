@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"cosmomail/config"
-	"cosmomail/models"
+	"novamail/config"
+	"novamail/models"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/encoding/unicode"
@@ -166,7 +166,7 @@ func (f *POP3Fetcher) parseMessage(client *POP3Client, rawData []byte, seq uint3
 	if messageID == "" {
 		// 无 Message-ID 时使用稳定键（account_id + seq），
 		// 避免使用 time.Now() 导致每次同步生成不同 ID 从而去重失败
-		messageID = fmt.Sprintf("<pop3-account-%d-seq-%d@cosmomail>", client.Account.ID, seq)
+		messageID = fmt.Sprintf("<pop3-account-%d-seq-%d@novamail>", client.Account.ID, seq)
 	}
 
 	fromAddr := extractAddrHeader(&entity.Header, "from")

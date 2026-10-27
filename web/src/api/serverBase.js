@@ -4,7 +4,7 @@
 // 运行时服务器地址：手机 App（Capacitor）用户在登录页填写，
 // Web 端保持同源相对路径。统一从这里读取，避免散落各处。
 
-const SERVER_KEY = 'cosmomail-server'
+const SERVER_KEY = 'novamail-server'
 
 /** 规范化服务器地址：去尾部斜杠；无协议时默认 http:// */
 function normalizeServer(input) {

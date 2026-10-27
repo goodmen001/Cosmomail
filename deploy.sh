@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Cosmo Mail 一键部署脚本
+# NovaMail 一键部署脚本
 # Copyright (C) 2026 magiccode (魔法代码)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -39,8 +39,8 @@
 #   --version V  指定安装版本（默认 latest）
 #   --port P     指定监听端口（默认 8080）
 #
-# 安装后可通过 cosmomail 命令管理:
-#   cosmomail status / start / stop / restart / update / uninstall / logs / version / doctor
+# 安装后可通过 novamail 命令管理:
+#   novamail status / start / stop / restart / update / uninstall / logs / version / doctor
 # ============================================================================
 set -euo pipefail
 
@@ -61,12 +61,12 @@ REPO_URL="https://github.com/${REPO}"
 API_URL="https://api.github.com/repos/${REPO}"
 RELEASE_URL="${API_URL}/releases/latest"
 
-INSTALL_DIR="/opt/cosmomail"
-BIN_NAME="cosmomail"
-DATA_DIR="/var/lib/cosmomail"
-LOG_FILE="/var/log/cosmomail.log"
+INSTALL_DIR="/opt/novamail"
+BIN_NAME="novamail"
+DATA_DIR="/var/lib/novamail"
+LOG_FILE="/var/log/novamail.log"
 CONFIG_DIR="${INSTALL_DIR}/config"
-SERVICE_NAME="cosmomail"
+SERVICE_NAME="novamail"
 CLI_BIN="/usr/local/bin/${BIN_NAME}"
 DEFAULT_PORT=8080
 
@@ -418,7 +418,7 @@ check_port_conflict() {
         occupied=true
         warn "端口 ${port} 已被占用:"
         echo "  ${occupier}" | head -3 | sed 's/^/    /'
-        warn "如果端口冲突，Cosmo Mail 可能无法正常启动。可通过 --port 参数指定其他端口"
+        warn "如果端口冲突，NovaMail 可能无法正常启动。可通过 --port 参数指定其他端口"
     else
         success "端口 ${port} 可用"
     fi
@@ -487,34 +487,34 @@ get_latest_version() {
 
         if command -v curl &>/dev/null; then
             # 同时提取 HTTP 状态码和响应体（用于区分网络问题 vs 无 Release）
-            http_code="$(curl -fsSL -o /tmp/cosmomail_api_resp.json \
+            http_code="$(curl -fsSL -o /tmp/novamail_api_resp.json \
                 -w '%{http_code}' --connect-timeout 10 --max-time 30 \
                 "${api_url}" 2>/dev/null || true)"
 
-            version="$(grep '"tag_name"' /tmp/cosmomail_api_resp.json 2>/dev/null | head -1 \
+            version="$(grep '"tag_name"' /tmp/novamail_api_resp.json 2>/dev/null | head -1 \
                 | sed -E 's/.*"tag_name":\s*"([^"]+)".*/\1/' || true)"
 
             # 404 = 该仓库暂未发布 Release，无需继续尝试镜像
             if [ "${http_code}" = "404" ]; then
-                rm -f /tmp/cosmomail_api_resp.json
+                rm -f /tmp/novamail_api_resp.json
                 die "该仓库暂未发布任何 Release（HTTP 404）。
   请先在 GitHub 上创建一个 Release: ${REPO_URL}/releases/new
   或使用 --version V.x.y.z 手动指定版本"
             fi
         elif command -v wget &>/dev/null; then
-            wget --timeout=30 -qO- "${api_url}" > /tmp/cosmomail_api_resp.json 2>/dev/null || true
-            version="$(grep '"tag_name"' /tmp/cosmomail_api_resp.json 2>/dev/null | head -1 \
+            wget --timeout=30 -qO- "${api_url}" > /tmp/novamail_api_resp.json 2>/dev/null || true
+            version="$(grep '"tag_name"' /tmp/novamail_api_resp.json 2>/dev/null | head -1 \
                 | sed -E 's/.*"tag_name":\s*"([^"]+)".*/\1/' || true)"
         fi
 
         if [ -n "${version}" ]; then
-            rm -f /tmp/cosmomail_api_resp.json
+            rm -f /tmp/novamail_api_resp.json
             echo "${version}"
             return
         fi
     done <<< "${api_urls}"
 
-    rm -f /tmp/cosmomail_api_resp.json
+    rm -f /tmp/novamail_api_resp.json
     die "无法获取最新版本号，请检查网络连接或手动指定版本 (--version V.x.y.z)
   提示: 国内用户如遇 GitHub 访问问题，脚本会自动切换代理；如全部失败请检查服务器是否能访问外网
   Release 页面: ${REPO_URL}/releases"
@@ -579,7 +579,7 @@ install_binary() {
     local final_bin="${INSTALL_DIR}/${BIN_NAME}"
     local backup_path="${final_bin}.bak.$(date +%Y%m%d%H%M%S)"
 
-    info "正在下载 Cosmo Mail ${version} (${target_os}/${target_arch})..."
+    info "正在下载 NovaMail ${version} (${target_os}/${target_arch})..."
     info "下载地址: ${binary_url}"
 
     # 始终下载到同目录临时文件。中断或下载失败时不会截断正在运行的程序，
@@ -661,7 +661,7 @@ create_systemd_service() {
 
     cat > "${service_file}" << SERVICEEOF
 [Unit]
-Description=Cosmo Mail Mail Management Service
+Description=NovaMail Mail Management Service
 Documentation=https://github.com/goodmen001/Cosmomail
 After=network-online.target
 Wants=network-online.target
@@ -676,10 +676,10 @@ Restart=on-failure
 RestartSec=5
 
 # 环境变量配置
-Environment=COSMOMAIL_ENV=production
-Environment=COSMOMAIL_PORT=${TARGET_PORT}
-Environment=COSMOMAIL_HOST=0.0.0.0
-Environment=COSMOMAIL_DSN=${DATA_DIR}/data/cosmomail.db
+Environment=NOVAMAIL_ENV=production
+Environment=NOVAMAIL_PORT=${TARGET_PORT}
+Environment=NOVAMAIL_HOST=0.0.0.0
+Environment=NOVAMAIL_DSN=${DATA_DIR}/data/novamail.db
 
 # 日志输出
 StandardOutput=append:${LOG_FILE}
@@ -704,7 +704,7 @@ SERVICEEOF
 
 # 创建 macOS LaunchDaemon 服务
 create_launchd_service() {
-    local plist_file="/Library/LaunchDaemons/com.cosmomail.service.plist"
+    local plist_file="/Library/LaunchDaemons/com.novamail.service.plist"
 
     cat > "${plist_file}" << PLISTEOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -713,7 +713,7 @@ create_launchd_service() {
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.cosmomail.service</string>
+    <string>com.novamail.service</string>
     <key>ProgramArguments</key>
     <array>
         <string>${INSTALL_DIR}/${BIN_NAME}</string>
@@ -730,14 +730,14 @@ create_launchd_service() {
     <string>${LOG_FILE}</string>
     <key>EnvironmentVariables</key>
     <dict>
-        <key>COSMOMAIL_ENV</key>
+        <key>NOVAMAIL_ENV</key>
         <string>production</string>
-        <key>COSMOMAIL_PORT</key>
+        <key>NOVAMAIL_PORT</key>
         <string>${TARGET_PORT}</string>
-        <key>COSMOMAIL_HOST</key>
+        <key>NOVAMAIL_HOST</key>
         <string>0.0.0.0</string>
-        <key>COSMOMAIL_DSN</key>
-        <string>${DATA_DIR}/data/cosmomail.db</string>
+        <key>NOVAMAIL_DSN</key>
+        <string>${DATA_DIR}/data/novamail.db</string>
     </dict>
 </dict>
 </plist>
@@ -756,7 +756,7 @@ svc_start() {
         if pgrep -f "${INSTALL_DIR}/${BIN_NAME}" &>/dev/null; then
             warn "进程已在运行中"
         else
-            cd "${DATA_DIR}" && COSMOMAIL_ENV=production COSMOMAIL_PORT="${TARGET_PORT}" \
+            cd "${DATA_DIR}" && NOVAMAIL_ENV=production NOVAMAIL_PORT="${TARGET_PORT}" \
                 nohup "${INSTALL_DIR}/${BIN_NAME}" >> "${LOG_FILE}" 2>&1 &
             sleep 1
             success "已在 受限环境中启动 (PID: $!)"
@@ -769,7 +769,7 @@ svc_start() {
         systemctl start "${SERVICE_NAME}" || die "启动失败"
         sleep 1
     else
-        launchctl start "com.cosmomail.service" 2>/dev/null \
+        launchctl start "com.novamail.service" 2>/dev/null \
             || (cd "${DATA_DIR}" && "${INSTALL_DIR}/${BIN_NAME}" &)
         sleep 1
     fi
@@ -790,7 +790,7 @@ svc_stop() {
     if is_linux; then
         systemctl stop "${SERVICE_NAME}" 2>/dev/null || warn "服务可能未在运行"
     else
-        launchctl stop "com.cosmomail.service" 2>/dev/null \
+        launchctl stop "com.novamail.service" 2>/dev/null \
             || pkill -f "${INSTALL_DIR}/${BIN_NAME}" 2>/dev/null || true
     fi
     success "服务已停止"
@@ -904,25 +904,25 @@ svc_logs() {
 # 第六部分：CLI Wrapper 生成模块
 # ═══════════════════════════════════════════════════════
 
-# 创建 /usr/local/bin/cosmomail CLI 命令（自包含，不依赖 deploy.sh）
+# 创建 /usr/local/bin/novamail CLI 命令（自包含，不依赖 deploy.sh）
 create_cli_wrapper() {
     local wrapper="${CLI_BIN}"
 
     cat > "${wrapper}" << 'WRAPPEREOF'
 #!/usr/bin/env bash
 # ============================================================================
-# Cosmo Mail CLI - 自包含命令行工具
-# 用法: cosmomail [命令] [选项]
+# NovaMail CLI - 自包含命令行工具
+# 用法: novamail [命令] [选项]
 # 注意: 此文件由 install 自动生成，基础操作不依赖 deploy.sh
 # ============================================================================
 set -euo pipefail
 
 # ─── 配置 ──────────────────────────────────────────
-COSMOMAIL_INSTALL_DIR="/opt/cosmomail"
-COSMOMAIL_DATA_DIR="/var/lib/cosmomail"
-COSMOMAIL_LOG_FILE="/var/log/cosmomail.log"
-COSMOMAIL_SERVICE="cosmomail"
-DEPLOY_SCRIPT="${COSMOMAIL_INSTALL_DIR}/deploy.sh"
+NOVAMAIL_INSTALL_DIR="/opt/novamail"
+NOVAMAIL_DATA_DIR="/var/lib/novamail"
+NOVAMAIL_LOG_FILE="/var/log/novamail.log"
+NOVAMAIL_SERVICE="novamail"
+DEPLOY_SCRIPT="${NOVAMAIL_INSTALL_DIR}/deploy.sh"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
@@ -971,9 +971,9 @@ _check_deploy_script() {
 
 show_help() {
     echo ""
-    echo -e "${CYAN}${BOLD}Cosmo Mail - 命令行工具${NC}"
+    echo -e "${CYAN}${BOLD}NovaMail - 命令行工具${NC}"
     echo ""
-    echo "用法: cosmomail <命令> [选项]"
+    echo "用法: novamail <命令> [选项]"
     echo ""
     echo "命令:"
     echo "  status       查看服务运行状态"
@@ -992,46 +992,46 @@ show_help() {
     echo "  -y, --yes    跳过确认提示"
     echo ""
     echo "示例:"
-    echo "  cosmomail status          # 查看状态"
-    echo "  cosmomail logs 50         # 查看50行日志"
-    echo "  cosmomail update -y       # 无交互更新"
+    echo "  novamail status          # 查看状态"
+    echo "  novamail logs 50         # 查看50行日志"
+    echo "  novamail update -y       # 无交互更新"
     echo ""
 }
 
 # ─── 状态查询（自包含）──────────────────────────────
 _cmd_status() {
-    local bin="${COSMOMAIL_INSTALL_DIR}/cosmomail"
+    local bin="${NOVAMAIL_INSTALL_DIR}/novamail"
     local running="否"
 
     if _is_restricted_env; then
         pgrep -f "${bin}" &>/dev/null && running="是 (后台模式)"
     elif _is_linux; then
-        if systemctl is-active --quiet "${COSMOMAIL_SERVICE}" 2>/dev/null; then
+        if systemctl is-active --quiet "${NOVAMAIL_SERVICE}" 2>/dev/null; then
             running="是 (systemd active)"
         else
             pgrep -f "${bin}" &>/dev/null && running="是 (进程运行中)"
         fi
     elif _is_macos; then
-        launchctl print "com.cosmomail.service" &>/dev/null 2>&1 && running="是 (launchd)"
+        launchctl print "com.novamail.service" &>/dev/null 2>&1 && running="是 (launchd)"
     fi
 
     echo ""
-    echo -e "${CYAN}${BOLD}Cosmo Mail 服务状态${NC}"
+    echo -e "${CYAN}${BOLD}NovaMail 服务状态${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "  运行状态:   ${running}"
     echo "  二进制:     ${bin}$([ -x "${bin}" ] || echo ' (缺失)')"
-    echo "  数据目录:   ${COSMOMAIL_DATA_DIR}"
+    echo "  数据目录:   ${NOVAMAIL_DATA_DIR}"
 
-    if [ -f "${COSMOMAIL_INSTALL_DIR}/.version" ]; then
-        echo "  已装版本:   $(cat "${COSMOMAIL_INSTALL_DIR}/.version")"
+    if [ -f "${NOVAMAIL_INSTALL_DIR}/.version" ]; then
+        echo "  已装版本:   $(cat "${NOVAMAIL_INSTALL_DIR}/.version")"
     fi
 
-    local port="${COSMOMAIL_PORT:-8080}"
+    local port="${NOVAMAIL_PORT:-8080}"
     echo "  监听端口:   ${port}"
 
     if _is_linux; then
         echo ""
-        systemctl status "${COSMOMAIL_SERVICE}" 2>/dev/null | head -15 || true
+        systemctl status "${NOVAMAIL_SERVICE}" 2>/dev/null | head -15 || true
     fi
 }
 
@@ -1039,44 +1039,44 @@ _cmd_status() {
 _cmd_logs() {
     local lines="${1:-100}"
 
-    if [ -f "${COSMOMAIL_LOG_FILE}" ]; then
+    if [ -f "${NOVAMAIL_LOG_FILE}" ]; then
         echo ""
-        echo -e "${CYAN}${BOLD}最近 ${lines} 行日志${NC} (${COSMOMAIL_LOG_FILE})"
+        echo -e "${CYAN}${BOLD}最近 ${lines} 行日志${NC} (${NOVAMAIL_LOG_FILE})"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        tail -n "${lines}" "${COSMOMAIL_LOG_FILE}" 2>/dev/null || error "无法读取日志"
+        tail -n "${lines}" "${NOVAMAIL_LOG_FILE}" 2>/dev/null || error "无法读取日志"
         return
     fi
 
     if _is_linux && command -v journalctl >/dev/null 2>&1; then
-        journalctl -u "${COSMOMAIL_SERVICE}" -n "${lines}" --no-pager
+        journalctl -u "${NOVAMAIL_SERVICE}" -n "${lines}" --no-pager
         return
     fi
 
-    error "没有可用的 Cosmo Mail 日志"
+    error "没有可用的 NovaMail 日志"
     exit 1
 }
 
 # ─── 版本信息（自包含）──────────────────────────────
 _cmd_version() {
-    local bin="${COSMOMAIL_INSTALL_DIR}/cosmomail"
+    local bin="${NOVAMAIL_INSTALL_DIR}/novamail"
 
     if [ ! -x "${bin}" ]; then
-        error "Cosmo Mail 未安装或二进制文件缺失"
+        error "NovaMail 未安装或二进制文件缺失"
         exit 1
     fi
 
     echo ""
-    echo -e "${CYAN}${BOLD}Cosmo Mail${NC}"
+    echo -e "${CYAN}${BOLD}NovaMail${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "  安装路径:  ${bin}"
-    echo "  数据目录:  ${COSMOMAIL_DATA_DIR}"
-    echo "  日志文件:  ${COSMOMAIL_LOG_FILE}"
+    echo "  数据目录:  ${NOVAMAIL_DATA_DIR}"
+    echo "  日志文件:  ${NOVAMAIL_LOG_FILE}"
 
-    if [ -f "${COSMOMAIL_INSTALL_DIR}/.version" ]; then
-        echo "  版本信息:  $(cat "${COSMOMAIL_INSTALL_DIR}/.version")"
+    if [ -f "${NOVAMAIL_INSTALL_DIR}/.version" ]; then
+        echo "  版本信息:  $(cat "${NOVAMAIL_INSTALL_DIR}/.version")"
     fi
 
-    echo "  服务名称:  ${COSMOMAIL_SERVICE}"
+    echo "  服务名称:  ${NOVAMAIL_SERVICE}"
 
     local fsize fmod
     fsize=$(stat -c%s "${bin}" 2>/dev/null || stat -f%z "${bin}" 2>/dev/null || echo "?")
@@ -1089,7 +1089,7 @@ _cmd_version() {
 _cmd_update_script() {
     local script_url="https://raw.githubusercontent.com/goodmen001/Cosmomail/main/deploy.sh"
     local backup="${DEPLOY_SCRIPT}.bak.$(date +%Y%m%d%H%M%S)"
-    local tmpfile="${COSMOMAIL_INSTALL_DIR}/.deploy.sh.tmp"
+    local tmpfile="${NOVAMAIL_INSTALL_DIR}/.deploy.sh.tmp"
 
     info "正在从 GitHub 获取最新部署脚本..."
     echo "  来源: ${script_url}"
@@ -1142,43 +1142,43 @@ case "${cmd}" in
         ;;
     start)
         _ensure_root start "$@" || true
-        info "正在启动 Cosmo Mail 服务..."
+        info "正在启动 NovaMail 服务..."
         if _is_restricted_env; then
-            cd "${COSMOMAIL_DATA_DIR}" && nohup "${COSMOMAIL_INSTALL_DIR}/cosmomail" >> "${COSMOMAIL_LOG_FILE}" 2>&1 &
+            cd "${NOVAMAIL_DATA_DIR}" && nohup "${NOVAMAIL_INSTALL_DIR}/novamail" >> "${NOVAMAIL_LOG_FILE}" 2>&1 &
             sleep 2
         elif _is_linux; then
-            systemctl start "${COSMOMAIL_SERVICE}"
+            systemctl start "${NOVAMAIL_SERVICE}"
         elif _is_macos; then
-            launchctl start "com.cosmomail.service" 2>/dev/null || true
+            launchctl start "com.novamail.service" 2>/dev/null || true
         fi
         ok "服务启动完成"
         ;;
     stop)
         _ensure_root stop "$@" || true
-        info "正在停止 Cosmo Mail 服务..."
+        info "正在停止 NovaMail 服务..."
         if _is_restricted_env; then
-            pkill -f "${COSMOMAIL_INSTALL_DIR}/cosmomail" 2>/dev/null || true
+            pkill -f "${NOVAMAIL_INSTALL_DIR}/novamail" 2>/dev/null || true
         elif _is_linux; then
-            systemctl stop "${COSMOMAIL_SERVICE}"
+            systemctl stop "${NOVAMAIL_SERVICE}"
         elif _is_macos; then
-            launchctl stop "com.cosmomail.service" 2>/dev/null || true
+            launchctl stop "com.novamail.service" 2>/dev/null || true
         fi
         ok "服务已停止"
         ;;
     restart)
         _ensure_root restart "$@" || true
-        info "正在重启 Cosmo Mail 服务..."
+        info "正在重启 NovaMail 服务..."
         if _is_restricted_env; then
-            pkill -f "${COSMOMAIL_INSTALL_DIR}/cosmomail" 2>/dev/null || true
+            pkill -f "${NOVAMAIL_INSTALL_DIR}/novamail" 2>/dev/null || true
             sleep 1
-            cd "${COSMOMAIL_DATA_DIR}" && nohup "${COSMOMAIL_INSTALL_DIR}/cosmomail" >> "${COSMOMAIL_LOG_FILE}" 2>&1 &
+            cd "${NOVAMAIL_DATA_DIR}" && nohup "${NOVAMAIL_INSTALL_DIR}/novamail" >> "${NOVAMAIL_LOG_FILE}" 2>&1 &
             sleep 2
         elif _is_linux; then
-            systemctl restart "${COSMOMAIL_SERVICE}"
+            systemctl restart "${NOVAMAIL_SERVICE}"
         elif _is_macos; then
-            launchctl stop "com.cosmomail.service" 2>/dev/null || true
+            launchctl stop "com.novamail.service" 2>/dev/null || true
             sleep 1
-            launchctl start "com.cosmomail.service" 2>/dev/null || true
+            launchctl start "com.novamail.service" 2>/dev/null || true
         fi
         ok "服务重启完成"
         ;;
@@ -1203,7 +1203,7 @@ case "${cmd}" in
         ;;
     *)
         error "未知命令: ${cmd}"
-        echo "使用 'cosmomail help' 查看帮助"
+        echo "使用 'novamail help' 查看帮助"
         exit 1
         ;;
 esac
@@ -1251,7 +1251,7 @@ cmd_install() {
         if [ -z "${latest_ver}" ]; then
             warn "无法获取远程版本信息，跳过重复安装"
             echo ""
-            echo -e "  ${YELLOW}Cosmo Mail 已安装 (v${installed_ver})${NC}"
+            echo -e "  ${YELLOW}NovaMail 已安装 (v${installed_ver})${NC}"
             echo "  如需重新安装，请先执行: $0 uninstall"
             echo "  或执行更新:           $0 update"
             exit 0
@@ -1357,14 +1357,14 @@ cmd_install() {
     echo ""
     info "正在启动服务..."
     if is_restricted_env; then
-        cd "${DATA_DIR}" && COSMOMAIL_ENV=production COSMOMAIL_PORT="${TARGET_PORT}" \
+        cd "${DATA_DIR}" && NOVAMAIL_ENV=production NOVAMAIL_PORT="${TARGET_PORT}" \
             nohup "${final_bin}" >> "${LOG_FILE}" 2>&1 &
         sleep 2
     elif is_linux; then
         systemctl start "${SERVICE_NAME}"
         sleep 2
     else
-        launchctl start "com.cosmomail.service" 2>/dev/null || true
+        launchctl start "com.novamail.service" 2>/dev/null || true
         sleep 2
     fi
 
@@ -1424,7 +1424,7 @@ cmd_uninstall() {
     check_root uninstall
     print_banner
 
-    warn "即将卸载 Cosmo Mail 服务"
+    warn "即将卸载 NovaMail 服务"
     echo ""
     echo "  程序目录: ${INSTALL_DIR}"
     echo "  数据目录: ${DATA_DIR} （包含数据库和附件）"
@@ -1436,7 +1436,7 @@ cmd_uninstall() {
 
     if ${INTERACTIVE}; then
         read -rp "是否同时删除数据(数据库/附件)? [y/N] " delete_data
-        read -rp "确认卸载 Cosmo Mail? [y/N] " confirm
+        read -rp "确认卸载 NovaMail? [y/N] " confirm
 
         if [[ ! "${confirm}" =~ ^[Yy]$ ]]; then
             info "已取消卸载"
@@ -1458,9 +1458,9 @@ cmd_uninstall() {
         ok "systemd 服务已移除"
     fi
 
-    if [ -f "/Library/LaunchDaemons/com.cosmomail.service.plist" ]; then
-        launchctl unload "/Library/LaunchDaemons/com.cosmomail.service.plist" 2>/dev/null || true
-        rm -f "/Library/LaunchDaemons/com.cosmomail.service.plist"
+    if [ -f "/Library/LaunchDaemons/com.novamail.service.plist" ]; then
+        launchctl unload "/Library/LaunchDaemons/com.novamail.service.plist" 2>/dev/null || true
+        rm -f "/Library/LaunchDaemons/com.novamail.service.plist"
         ok "LaunchDaemon 已移除"
     fi
 
@@ -1542,11 +1542,11 @@ cmd_doctor() {
     echo -e "${BOLD}[数据目录]${NC}"
 
     check_item "数据主目录" [ -d "${DATA_DIR}" ]
-    check_item "数据库文件" [ -f "${DATA_DIR}/data/cosmomail.db" ]
+    check_item "数据库文件" [ -f "${DATA_DIR}/data/novamail.db" ]
 
-    if [ -f "${DATA_DIR}/data/cosmomail.db" ]; then
+    if [ -f "${DATA_DIR}/data/novamail.db" ]; then
         local db_size
-        db_size=$(ls -lh "${DATA_DIR}/data/cosmomail.db" 2>/dev/null | awk '{print $5}')
+        db_size=$(ls -lh "${DATA_DIR}/data/novamail.db" 2>/dev/null | awk '{print $5}')
         info "  DB 大小: ${db_size}"
     fi
 
@@ -1611,7 +1611,7 @@ cmd_doctor() {
     echo ""
     echo -e "${BOLD}[CLI 命令]${NC}"
 
-    check_item "cosmomail 命令" [ -x "${CLI_BIN}" ]
+    check_item "novamail 命令" [ -x "${CLI_BIN}" ]
     if [ -x "${CLI_BIN}" ]; then
         info "  路径: ${CLI_BIN}"
     fi
@@ -1655,9 +1655,9 @@ cmd_doctor() {
         echo -e "  ${YELLOW}部分问题: ${passed_checks}/${total_checks} 通过, ${failed} 项需关注${NC}"
         echo ""
         echo "  建议:"
-        printf '  - 如服务未运行: \033[0;36msudo cosmomail start\033[0m\n'
+        printf '  - 如服务未运行: \033[0;36msudo novamail start\033[0m\n'
         printf '  - 如缺少文件:   \033[0;36msudo ./deploy.sh install\033[0m\n'
-        printf '  - 如端口未监听: 检查日志: \033[0;36msudo cosmomail logs\033[0m\n'
+        printf '  - 如端口未监听: 检查日志: \033[0;36msudo novamail logs\033[0m\n'
     fi
 
     echo ""
@@ -1670,7 +1670,7 @@ cmd_version() {
     local latest_ver=""
 
     echo ""
-    echo -e "${CYAN}${BOLD}Cosmo Mail 版本信息${NC}"
+    echo -e "${CYAN}${BOLD}NovaMail 版本信息${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "  已安装版本:  ${installed_ver}"
 
@@ -1715,7 +1715,7 @@ print_summary() {
 
     case "${action}" in
         install)
-            echo -e "  ${GREEN}${BOLD}✅ Cosmo Mail 安装成功！${NC}"
+            echo -e "  ${GREEN}${BOLD}✅ NovaMail 安装成功！${NC}"
             echo ""
             echo -e "  版本信息:  ${CYAN}${version}${NC}"
             echo -e "  访问地址:  ${CYAN}http://localhost:${TARGET_PORT}${NC}"
@@ -1725,25 +1725,25 @@ print_summary() {
             echo -e "  CLI 命令:  ${CYAN}${CLI_BIN}${NC}"
             echo ""
             echo -e "  ${BOLD}常用命令:${NC}"
-            echo -e "  ${DIM}  cosmomail status${NC}     查看服务状态"
-            echo -e "  ${DIM}  cosmomail logs${NC}       查看运行日志"
-            echo -e "  ${DIM}  cosmomail restart${NC}    重启服务"
-            echo -e "  ${DIM}  cosmomail update${NC}     更新到最新版"
-            echo -e "  ${DIM}  cosmomail doctor${NC}     环境健康自检"
-            echo -e "  ${DIM}  cosmomail uninstall${NC}  卸载程序"
+            echo -e "  ${DIM}  novamail status${NC}     查看服务状态"
+            echo -e "  ${DIM}  novamail logs${NC}       查看运行日志"
+            echo -e "  ${DIM}  novamail restart${NC}    重启服务"
+            echo -e "  ${DIM}  novamail update${NC}     更新到最新版"
+            echo -e "  ${DIM}  novamail doctor${NC}     环境健康自检"
+            echo -e "  ${DIM}  novamail uninstall${NC}  卸载程序"
             ;;
 
         update)
-            echo -e "  ${GREEN}${BOLD}🔄 Cosmo Mail 更新完成！${NC}"
+            echo -e "  ${GREEN}${BOLD}🔄 NovaMail 更新完成！${NC}"
             echo ""
             echo -e "  当前版本:  ${CYAN}${version}${NC}"
             echo -e "  访问地址:  ${CYAN}http://localhost:${TARGET_PORT}${NC}"
             echo ""
-            echo -e "  使用 ${CYAN}cosmomail status${NC} 确认服务运行正常"
+            echo -e "  使用 ${CYAN}novamail status${NC} 确认服务运行正常"
             ;;
 
         uninstall)
-            echo -e "  ${YELLOW}${BOLD}🗑️  Cosmo Mail 已卸载${NC}"
+            echo -e "  ${YELLOW}${BOLD}🗑️  NovaMail 已卸载${NC}"
             echo ""
             echo -e "  程序文件已从 ${INSTALL_DIR} 移除"
             echo -e "  CLI 命令已从 ${CLI_BIN} 移除"
@@ -1824,7 +1824,7 @@ _show_interactive_menu() {
 
 show_help() {
     echo ""
-    echo -e "${CYAN}${BOLD}Cosmo Mail 一键部署工具${NC}"
+    echo -e "${CYAN}${BOLD}NovaMail 一键部署工具${NC}"
     echo ""
     echo "用法: $0 [命令] [选项]"
     echo ""
@@ -1856,8 +1856,8 @@ show_help() {
     echo "仓库: ${REPO_URL}"
     echo "文档: https://github.com/goodmen001/Cosmomail/wiki"
     echo ""
-    echo "安装后使用 cosmomail 命令管理:"
-    echo "  cosmomail status | start | stop | restart | update | logs | doctor | version"
+    echo "安装后使用 novamail 命令管理:"
+    echo "  novamail status | start | stop | restart | update | logs | doctor | version"
     echo ""
 }
 

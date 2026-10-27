@@ -2,7 +2,7 @@
   "defaults": {
     "run-as": "package"
   },
-  "username": "com.goodmen001.cosmomail",
-  "groupname": "com.goodmen001.cosmomail"
+  "username": "com.goodmen001.novamail",
+  "groupname": "com.goodmen001.novamail"
 }
 

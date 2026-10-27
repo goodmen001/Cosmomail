@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Cosmo Mail 版本管理脚本
+ * NovaMail 版本管理脚本
  *
  * 用法:
  *   node version.js <major|minor|patch> [changelog消息] [--dry-run]
@@ -201,7 +201,7 @@ function main() {
 
   if (!type || !['major', 'minor', 'patch'].includes(type)) {
     console.log(`
-📦 Cosmo Mail 版本管理工具
+📦 NovaMail 版本管理工具
 
 用法:
   node version.js <major|minor|patch> [changelog消息] [选项]

@@ -1,14 +1,14 @@
 <div align="center">
 
-<img src="./public/images/icon_512.png" alt="Cosmo Mail" width="128" height="128">
+<img src="./public/images/icon_512.png" alt="NovaMail" width="128" height="128">
 
-# Cosmo Mail
+# NovaMail
 
 快速、私有的多邮箱统一管理平台。
 
 </div>
 
-Cosmo Mail 使用 Go、SQLite 和 Vue 3 构建，支持 IMAP IDLE、UID 增量同步、POP3 UIDL、SMTP 发信、SSE/Web Push 与 Webhook。邮件和凭据由用户自行托管。
+NovaMail 使用 Go、SQLite 和 Vue 3 构建，支持 IMAP IDLE、UID 增量同步、POP3 UIDL、SMTP 发信、SSE/Web Push 与 Webhook。邮件和凭据由用户自行托管。
 
 ## 快速部署
 
@@ -16,7 +16,7 @@ Cosmo Mail 使用 Go、SQLite 和 Vue 3 构建，支持 IMAP IDLE、UID 增量�
 
 ```bash
 git clone https://github.com/goodmen001/Cosmomail.git
-cd Cosmomail
+cd NovaMail
 docker compose up -d
 ```
 
@@ -24,12 +24,12 @@ docker compose up -d
 
 ```yaml
 services:
-  cosmomail:
+  novamail:
     image: ghcr.io/goodmen001/cosmomail:latest
     ports:
       - "8080:8080"
     volumes:
-      - cosmomail-data:/app/data
+      - novamail-data:/app/data
 ```
 
 详见 [Docker 部署文档](./docs/guide/docker.md)。
@@ -40,17 +40,17 @@ services:
 curl -fsSL https://raw.githubusercontent.com/goodmen001/Cosmomail/main/deploy.sh | sudo bash
 ```
 
-安装后使用统一的 `cosmomail` 命令：
+安装后使用统一的 `novamail` 命令：
 
 ```bash
-cosmomail status
-cosmomail start
-cosmomail stop
-cosmomail restart
-cosmomail update
-cosmomail logs
-cosmomail doctor
-cosmomail uninstall
+novamail status
+novamail start
+novamail stop
+novamail restart
+novamail update
+novamail logs
+novamail doctor
+novamail uninstall
 ```
 
 ## 本地开发
@@ -67,10 +67,20 @@ cosmomail uninstall
 ./build.sh
 ```
 
-构建产物位于 `bin/`，可通过 `COSMOMAIL_*` 环境变量配置运行参数，示例见 `.env.example`。
+构建产物位于 `bin/`，可通过 `NOVAMAIL_*` 环境变量配置运行参数，示例见 `.env.example`。
+
+## 项目来源与致谢（Project Origin & Acknowledgements）
+
+NovaMail 是从开源项目 [Cosmomail](https://github.com/goodmen001/Cosmomail) 迭代升级而来的分支续作。
+
+- **原项目名称**：Cosmomail
+- **原作者**：magiccode（魔法代码）
+- **原许可证**：AGPL-3.0-or-later
+
+感谢原作者 magiccode 的出色工作，NovaMail 的所有底层能力（IMAP/POP3/SMTP、多账号管理、推送通知等）均建立在原项目的基础之上。原项目的 AGPL 版权声明完整保留在源码文件头与 [LICENSE](./LICENSE) 中。自 NovaMail 起进行品牌重命名与全新的三主题 UI（Aurora / Obsidian / Moonlight）等迭代。
 
 ## License
 
-Cosmo Mail 基于 AGPL-3.0-or-later 发布。该项目由原 AGPL 代码继续开发；原作者版权声明保留在源码与许可证中。通过网络向用户提供服务时，需要向用户提供对应版本的完整源代码。
+NovaMail 基于 AGPL-3.0-or-later 发布。该项目由原 AGPL 代码继续开发；原作者版权声明保留在源码与许可证中。通过网络向用户提供服务时，需要向用户提供对应版本的完整源代码。
 
 [完整许可证](./LICENSE)

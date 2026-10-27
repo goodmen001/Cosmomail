@@ -4,9 +4,9 @@
 package services
 
 import (
-	"cosmomail/config"
-	"cosmomail/imap"
-	"cosmomail/models"
+	"novamail/config"
+	"novamail/imap"
+	"novamail/models"
 	"fmt"
 
 	"gorm.io/gorm"

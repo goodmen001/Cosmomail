@@ -7,7 +7,7 @@ import (
 	"context"
 	"time"
 
-	"cosmomail/oauth2"
+	"novamail/oauth2"
 
 	"github.com/gofiber/fiber/v2"
 )

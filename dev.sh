@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Cosmo Mail 一键开发环境启动脚本
+# NovaMail 一键开发环境启动脚本
 # 用法: ./dev.sh [command]
 #   start   - 启动前后端开发服务器（默认）
 #   stop    - 停止所有开发服务
@@ -30,7 +30,7 @@ BACKEND_PORT=8080
 FRONTEND_PORT=5173
 
 # 开发环境配置
-export COSMOMAIL_ENV="dev"
+export NOVAMAIL_ENV="dev"
 DEV_USERNAME="admin"
 DEV_PASSWORD="admin123"
 
@@ -48,7 +48,7 @@ mkdir -p "${SERVER_DIR}/embedfs/dist"
 print_banner() {
     echo -e "${CYAN}${BOLD}"
     echo "╔══════════════════════════════════════════╗"
-    echo "║       Cosmo Mail 开发环境                     ║"
+    echo "║       NovaMail 开发环境                     ║"
     echo "╚══════════════════════════════════════════╝"
     echo -e "${NC}"
 }
@@ -138,11 +138,11 @@ cmd_start() {
     cd "${SERVER_DIR}"
 
     if command -v air &>/dev/null; then
-        COSMOMAIL_ENV=dev air &
+        NOVAMAIL_ENV=dev air &
         BACKEND_PID=$!
         echo -e "${GREEN}  ✅ 后端已启动 (air 热重载, PID: ${BACKEND_PID})${NC}"
     else
-        COSMOMAIL_ENV=dev go run -tags dev . &
+        NOVAMAIL_ENV=dev go run -tags dev . &
         BACKEND_PID=$!
         echo -e "${GREEN}  ✅ 后端已启动 (go run, PID: ${BACKEND_PID})${NC}"
     fi
@@ -282,7 +282,7 @@ cmd_help() {
 说明:
   - 默认前台运行，日志实时输出到终端
   - 按 Ctrl+C 可同时停止前后端服务
-  - 开发环境自动设置 COSMOMAIL_ENV=dev
+  - 开发环境自动设置 NOVAMAIL_ENV=dev
   - 首次启动会自动创建默认管理员账号 (admin / admin123)
   - 生产构建请使用: ./build.sh [GOOS] [GOARCH]
 EOF

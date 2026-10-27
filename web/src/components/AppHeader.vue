@@ -113,7 +113,7 @@ const pageTitle = computed(() => {
     '/accounts': '邮箱管理',
     '/settings': '设置',
   }
-  return titles[route.path] || route.meta?.title || 'Cosmo Mail'
+  return titles[route.path] || route.meta?.title || 'NovaMail'
 })
 
 function handleSearch(e) {

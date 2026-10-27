@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.goodmen001.cosmomail"
+    namespace = "com.goodmen001.novamail"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.goodmen001.cosmomail"
+        applicationId "com.goodmen001.novamail"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

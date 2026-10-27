@@ -213,7 +213,7 @@ function handleReply() {
     const htmlBody = mail.value.html_body || ''
     const textBody = mail.value.text_body || ''
     if (htmlBody || textBody) {
-      sessionStorage.setItem('cosmomail-reply-quote', JSON.stringify({
+      sessionStorage.setItem('novamail-reply-quote', JSON.stringify({
         header: quoteHeader,
         htmlBody,
         textBody,

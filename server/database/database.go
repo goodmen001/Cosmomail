@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"cosmomail/models"
+	"novamail/models"
 
 	// 纯 Go SQLite 驱动（基于 modernc.org/sqlite，无需 CGO）
 	"github.com/glebarez/sqlite"
@@ -30,7 +30,7 @@ func Init(dsn string) *gorm.DB {
 
 	// 按环境控制 SQL 日志：生产环境静默，开发环境输出 SQL
 	logLevel := gormlogger.Silent
-	if os.Getenv("COSMOMAIL_ENV") != "production" {
+	if os.Getenv("NOVAMAIL_ENV") != "production" {
 		logLevel = gormlogger.Info
 	}
 
@@ -117,13 +117,13 @@ func Init(dsn string) *gorm.DB {
 }
 
 // EnsureSecuritySecrets 确保安全密钥存在：
-//   - 首次启动时优先使用环境变量传入的密钥（COSMOMAIL_JWT_SECRET / COSMOMAIL_ENCRYPT_KEY），
+//   - 首次启动时优先使用环境变量传入的密钥（NOVAMAIL_JWT_SECRET / NOVAMAIL_ENCRYPT_KEY），
 //     未设置则自动生成随机密钥，最终持久化到数据库；
 //   - 后续启动从数据库读取，但若环境变量有新值则以环境变量为准（覆盖数据库值）。
 func EnsureSecuritySecrets(db *gorm.DB, jwtSecret, encryptionKey *string) {
 	// 优先从环境变量读取用户指定的密钥
-	envJWT := os.Getenv("COSMOMAIL_JWT_SECRET")
-	envEncKey := os.Getenv("COSMOMAIL_ENCRYPT_KEY")
+	envJWT := os.Getenv("NOVAMAIL_JWT_SECRET")
+	envEncKey := os.Getenv("NOVAMAIL_ENCRYPT_KEY")
 
 	var cfg models.AppConfig
 	result := db.First(&cfg)
@@ -141,7 +141,7 @@ func EnsureSecuritySecrets(db *gorm.DB, jwtSecret, encryptionKey *string) {
 			}
 			log.Println("🔑 JWT 密钥：已自动生成随机密钥")
 		} else {
-			log.Println("🔑 JWT 密钥：从环境变量 COSMOMAIL_JWT_SECRET 读取")
+			log.Println("🔑 JWT 密钥：从环境变量 NOVAMAIL_JWT_SECRET 读取")
 		}
 
 		if encKey == "" {
@@ -151,7 +151,7 @@ func EnsureSecuritySecrets(db *gorm.DB, jwtSecret, encryptionKey *string) {
 			}
 			log.Println("🔐 加密密钥：已自动生成随机密钥")
 		} else {
-			log.Println("🔐 加密密钥：从环境变量 COSMOMAIL_ENCRYPT_KEY 读取")
+			log.Println("🔐 加密密钥：从环境变量 NOVAMAIL_ENCRYPT_KEY 读取")
 		}
 
 		cfg = models.AppConfig{
@@ -227,10 +227,10 @@ func cleanupDuplicateMails(db *gorm.DB) {
 	}
 
 	// 步骤2：将旧的 fallback message_id 更新为新的稳定格式
-	// 旧格式: <auto-{uid}-{timestamp}@proxy>  →  新格式: <auto-account-{aid}-folder-{folder}-uid-{uid}@cosmomail>
+	// 旧格式: <auto-{uid}-{timestamp}@proxy>  →  新格式: <auto-account-{aid}-folder-{folder}-uid-{uid}@novamail>
 	result = db.Exec(`
 		UPDATE mails
-		SET message_id = '<auto-account-' || account_id || '-folder-' || COALESCE(folder, 'inbox') || '-uid-' || message_uid || '@cosmomail>'
+		SET message_id = '<auto-account-' || account_id || '-folder-' || COALESCE(folder, 'inbox') || '-uid-' || message_uid || '@novamail>'
 		WHERE message_id LIKE '<auto-%@proxy>'
 	`)
 	if result.Error != nil {
@@ -239,10 +239,10 @@ func cleanupDuplicateMails(db *gorm.DB) {
 		log.Printf("🔄 [迁移] 已更新 %d 条旧格式 IMAP fallback message_id", result.RowsAffected)
 	}
 
-	// 旧格式: <pop3-{seq}-{timestamp}@proxy>  →  新格式: <pop3-account-{aid}-seq-{seq}@cosmomail>
+	// 旧格式: <pop3-{seq}-{timestamp}@proxy>  →  新格式: <pop3-account-{aid}-seq-{seq}@novamail>
 	result = db.Exec(`
 		UPDATE mails
-		SET message_id = '<pop3-account-' || account_id || '-seq-' || message_uid || '@cosmomail>'
+		SET message_id = '<pop3-account-' || account_id || '-seq-' || message_uid || '@novamail>'
 		WHERE message_id LIKE '<pop3-%@proxy>'
 	`)
 	if result.Error != nil {

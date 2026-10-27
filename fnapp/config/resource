@@ -1,7 +1,7 @@
 {
   "data-share": {
     "shares": [
-      { "name": "cosmomail-data" }
+      { "name": "novamail-data" }
     ]
   },
   "api-scope": [

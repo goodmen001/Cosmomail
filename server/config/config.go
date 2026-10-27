@@ -30,7 +30,7 @@ func (s ServerConfig) Addr() string {
 
 // DatabaseConfig 数据库配置
 type DatabaseConfig struct {
-	DSN string // SQLite 连接路径，默认 data/cosmomail.db
+	DSN string // SQLite 连接路径，默认 data/novamail.db
 }
 
 // IMAPConfig IMAP 同步配置
@@ -98,82 +98,82 @@ type OAuth2Config struct {
 // Load 加载配置，优先从环境变量读取，使用默认值兜底
 func Load() *Config {
 	port := 8080
-	if v := os.Getenv("COSMOMAIL_PORT"); v != "" {
+	if v := os.Getenv("NOVAMAIL_PORT"); v != "" {
 		if p, err := strconv.Atoi(v); err == nil && p > 0 {
 			port = p
 		}
 	}
 
 	pollInterval := 60
-	if v := os.Getenv("COSMOMAIL_POLL_INTERVAL"); v != "" {
+	if v := os.Getenv("NOVAMAIL_POLL_INTERVAL"); v != "" {
 		if p, err := strconv.Atoi(v); err == nil && p > 10 {
 			pollInterval = p
 		}
 	}
 
 	maxConcurrent := 10
-	if v := os.Getenv("COSMOMAIL_MAX_CONCURRENT"); v != "" {
+	if v := os.Getenv("NOVAMAIL_MAX_CONCURRENT"); v != "" {
 		if p, err := strconv.Atoi(v); err == nil && p > 0 {
 			maxConcurrent = p
 		}
 	}
 
 	syncBatchSize := 50
-	if v := os.Getenv("COSMOMAIL_SYNC_BATCH_SIZE"); v != "" {
+	if v := os.Getenv("NOVAMAIL_SYNC_BATCH_SIZE"); v != "" {
 		if p, err := strconv.Atoi(v); err == nil && p > 0 {
 			syncBatchSize = p
 		}
 	}
 
 	maxAttachmentSize := int64(50) // 默认 50MB
-	if v := os.Getenv("COSMOMAIL_MAX_ATTACHMENT_SIZE"); v != "" {
+	if v := os.Getenv("NOVAMAIL_MAX_ATTACHMENT_SIZE"); v != "" {
 		if p, err := strconv.ParseInt(v, 10, 64); err == nil && p >= 0 {
 			maxAttachmentSize = p
 		}
 	}
 
 	minDiskFreeMB := int64(1024) // 默认 1GB
-	if v := os.Getenv("COSMOMAIL_MIN_DISK_FREE"); v != "" {
+	if v := os.Getenv("NOVAMAIL_MIN_DISK_FREE"); v != "" {
 		if p, err := strconv.ParseInt(v, 10, 64); err == nil && p >= 0 {
 			minDiskFreeMB = p
 		}
 	}
 
 	cacheThresholdMB := int64(2) // 默认 2MB
-	if v := os.Getenv("COSMOMAIL_CACHE_THRESHOLD"); v != "" {
+	if v := os.Getenv("NOVAMAIL_CACHE_THRESHOLD"); v != "" {
 		if p, err := strconv.ParseInt(v, 10, 64); err == nil && p >= 0 {
 			cacheThresholdMB = p
 		}
 	}
 
 	cacheExpireDays := 30
-	if v := os.Getenv("COSMOMAIL_CACHE_EXPIRE_DAYS"); v != "" {
+	if v := os.Getenv("NOVAMAIL_CACHE_EXPIRE_DAYS"); v != "" {
 		if p, err := strconv.Atoi(v); err == nil && p > 0 {
 			cacheExpireDays = p
 		}
 	}
 
 	autoCacheEnabled := false
-	if v := os.Getenv("COSMOMAIL_AUTO_CACHE"); v != "" {
+	if v := os.Getenv("NOVAMAIL_AUTO_CACHE"); v != "" {
 		autoCacheEnabled = v == "1" || v == "true" || v == "TRUE" || v == "True"
 	}
 
-	dsn := "data/cosmomail.db"
-	if v := os.Getenv("COSMOMAIL_DSN"); v != "" {
+	dsn := "data/novamail.db"
+	if v := os.Getenv("NOVAMAIL_DSN"); v != "" {
 		dsn = v
 	}
 
 	return &Config{
 		Server: ServerConfig{
 			Port: port,
-			Host: getEnv("COSMOMAIL_HOST", "0.0.0.0"),
+			Host: getEnv("NOVAMAIL_HOST", "0.0.0.0"),
 		},
 		Database: DatabaseConfig{
 			DSN: dsn,
 		},
 		IMAP: IMAPConfig{
 			PollInterval:      pollInterval,
-			IDLEEnabled:       getEnvBool("COSMOMAIL_IDLE_ENABLED", true),
+			IDLEEnabled:       getEnvBool("NOVAMAIL_IDLE_ENABLED", true),
 			MaxConcurrent:     maxConcurrent,
 			SyncBatchSize:     syncBatchSize,
 			MaxAttachmentSize: maxAttachmentSize,
@@ -185,12 +185,12 @@ func Load() *Config {
 		Security: SecurityConfig{
 			// 安全密钥由 EnsureSecuritySecrets 统一管理：
 			//   - 默认自动生成随机密钥并持久化到数据库
-			//   - 可通过环境变量 COSMOMAIL_JWT_SECRET / COSMOMAIL_ENCRYPT_KEY 显式指定（优先级更高）
+			//   - 可通过环境变量 NOVAMAIL_JWT_SECRET / NOVAMAIL_ENCRYPT_KEY 显式指定（优先级更高）
 			EncryptionKey: "",
 			JWTSecret:     "",
 		},
 		OAuth2: OAuth2Config{
-			MicrosoftClientID: getEnv("COSMOMAIL_OAUTH_MICROSOFT_CLIENT_ID", ""),
+			MicrosoftClientID: getEnv("NOVAMAIL_OAUTH_MICROSOFT_CLIENT_ID", ""),
 		},
 	}
 }

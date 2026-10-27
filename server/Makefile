@@ -1,13 +1,13 @@
-# Cosmo Mail 编译与部署
+# NovaMail 编译与部署
 # 用法: make build / make run / make install
 
-APP_NAME := cosmomail
+APP_NAME := novamail
 VERSION := 1.1.7
 BUILD_TIME := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "dev")
 
 # Go 参数
-LDFLAGS := -ldflags "-s -w -X cosmomail/buildinfo.Version=$(VERSION) -X cosmomail/buildinfo.BuildTime=$(BUILD_TIME) -X cosmomail/buildinfo.GitCommit=$(GIT_COMMIT)"
+LDFLAGS := -ldflags "-s -w -X novamail/buildinfo.Version=$(VERSION) -X novamail/buildinfo.BuildTime=$(BUILD_TIME) -X novamail/buildinfo.GitCommit=$(GIT_COMMIT)"
 
 .PHONY: all build run clean install uninstall help
 
@@ -45,9 +45,9 @@ install: build
 	@echo "📦 安装 $(APP_NAME)..."
 	sudo cp bin/$(APP_NAME) /usr/local/bin/
 	sudo chmod 755 /usr/local/bin/$(APP_NAME)
-	sudo mkdir -p /var/lib/cosmomail/data
-	sudo mkdir -p /etc/cosmomail
-	[ -f cosmomail.service ] && sudo cp cosmomail.service /etc/systemd/system/
+	sudo mkdir -p /var/lib/novamail/data
+	sudo mkdir -p /etc/novamail
+	[ -f novamail.service ] && sudo cp novamail.service /etc/systemd/system/
 	sudo systemctl daemon-reload
 	@echo "✅ 安装完成"
 

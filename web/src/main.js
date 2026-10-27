@@ -9,6 +9,7 @@ import { setRouter } from './api/request'
 import './styles/variables.css'
 import './styles/themes.css'
 import './styles/global.css'
+import './styles/skins.css'
 import './styles/responsive.css'
 
 const app = createApp(App)

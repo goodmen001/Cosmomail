@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"cosmomail/config"
-	"cosmomail/contacts"
-	"cosmomail/imap"
-	"cosmomail/models"
-	pop3pkg "cosmomail/pop3"
-	"cosmomail/smtp"
+	"novamail/config"
+	"novamail/contacts"
+	"novamail/imap"
+	"novamail/models"
+	pop3pkg "novamail/pop3"
+	"novamail/smtp"
 
 	"gorm.io/gorm"
 )

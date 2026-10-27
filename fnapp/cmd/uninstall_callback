@@ -14,7 +14,7 @@ query_authorized_dir() {
         -X POST http://localhost/api/v1/trimapp \
         -H 'Content-Type: application/json' \
         -H "Authorization: Bearer ${TRIM_API_TOKEN}" \
-        -d "{\"reqId\":\"1\",\"req\":\"trim.file.getSharedAccessibleFolders\",\"appName\":\"com.goodmen001.cosmomail\",\"data\":{}}" \
+        -d "{\"reqId\":\"1\",\"req\":\"trim.file.getSharedAccessibleFolders\",\"appName\":\"com.goodmen001.novamail\",\"data\":{}}" \
         2>/dev/null \
         | sed -n 's/.*"paths":\[[^]]*"\([^"]*\)".*/\1/p' | head -n 1
 }
@@ -29,17 +29,17 @@ resolve_data_dirs() {
             /*) printf '%s\n' "${custom}" ;;
         esac
     fi
-    # 2. 管理员共享授权目录下的 cosmomail-data 子目录
+    # 2. 管理员共享授权目录下的 novamail-data 子目录
     share="$(query_authorized_dir)"
-    if [ -n "${share}" ] && [ -d "${share}/cosmomail-data" ]; then
-        printf '%s\n' "${share}/cosmomail-data"
+    if [ -n "${share}" ] && [ -d "${share}/novamail-data" ]; then
+        printf '%s\n' "${share}/novamail-data"
     fi
     # 3. data-share 共享目录
     if [ -n "${TRIM_DATA_SHARE_PATHS}" ]; then
         share="${TRIM_DATA_SHARE_PATHS%%:*}"
         [ -n "${share}" ] && [ -d "${share}" ] && printf '%s\n' "${share}"
     fi
-    for share in /var/apps/*/share/cosmomail-data; do
+    for share in /var/apps/*/share/novamail-data; do
         [ -d "${share}" ] && printf '%s\n' "${share}"
     done
     # 4. 默认数据目录
@@ -53,7 +53,7 @@ case "${purge_data:-keep}" in
             [ -n "${dir}" ] && rm -rf "${dir}" 2>/dev/null
         done
         # 运行时文件（日志、pid、数据目录指针）
-        rm -f "${TRIM_PKGVAR}/cosmomail.log" "${TRIM_PKGVAR}/cosmomail.pid"
+        rm -f "${TRIM_PKGVAR}/novamail.log" "${TRIM_PKGVAR}/novamail.pid"
         rm -rf "${TRIM_PKGVAR}/data" 2>/dev/null
         rm -f "${TRIM_PKGETC}/data_dir"
         ;;

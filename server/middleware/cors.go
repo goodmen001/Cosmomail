@@ -13,7 +13,7 @@ import (
 // CORS 配置跨域资源共享中间件
 // 开发环境允许所有来源，生产环境通过环境变量配置
 func CORS() fiber.Handler {
-	allowedOrigins := os.Getenv("COSMOMAIL_CORS_ORIGINS")
+	allowedOrigins := os.Getenv("NOVAMAIL_CORS_ORIGINS")
 	if allowedOrigins == "" {
 		// Vite 默认端口 + Capacitor 手机 App WebView 来源（http://localhost，iOS 为 capacitor://localhost）
 		allowedOrigins = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://localhost,https://localhost,capacitor://localhost,ionic://localhost"

@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestDoDispatchUsesValidCosmomailHeaders(t *testing.T) {
+func TestDoDispatchUsesValidNovaMailHeaders(t *testing.T) {
 	t.Helper()
 
 	var eventHeader, timestampHeader, signatureHeader string

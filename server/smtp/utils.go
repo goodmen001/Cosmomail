@@ -46,7 +46,7 @@ func extractDomain(email string) string {
 	if at >= 0 && at+1 < len(email) {
 		return email[at+1:]
 	}
-	return "cosmomail.local"
+	return "novamail.local"
 }
 
 // randomBoundary 生成分隔边界

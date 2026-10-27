@@ -1,12 +1,12 @@
 # PWA 客户端
 
-Cosmo Mail 前端是一个完整的 [渐进式 Web 应用 (PWA)](https://developer.mozilla.org/zh-CN/docs/Web/Progressive_web_apps)，提供接近原生应用的使用体验。
+NovaMail 前端是一个完整的 [渐进式 Web 应用 (PWA)](https://developer.mozilla.org/zh-CN/docs/Web/Progressive_web_apps)，提供接近原生应用的使用体验。
 
 ## 安装到设备
 
 ### 桌面浏览器
 
-- **Chrome / Edge**：点击地址栏右侧的「安装」图标（或在菜单中选择「安装 Cosmo Mail」）
+- **Chrome / Edge**：点击地址栏右侧的「安装」图标（或在菜单中选择「安装 NovaMail」）
 - **系统要求**：Chrome 70+、Edge 79+
 
 ### 移动浏览器
@@ -14,7 +14,7 @@ Cosmo Mail 前端是一个完整的 [渐进式 Web 应用 (PWA)](https://develop
 - **iOS Safari**：点击分享按钮 → 「添加到主屏幕」
 - **Android Chrome**：系统会自动弹出安装提示
 
-安装后 Cosmo Mail 会作为独立应用运行，没有浏览器地址栏干扰。
+安装后 NovaMail 会作为独立应用运行，没有浏览器地址栏干扰。
 
 ## 离线访问
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"cosmomail/crypto"
+	"novamail/crypto"
 
 	"gorm.io/gorm"
 )

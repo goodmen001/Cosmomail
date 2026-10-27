@@ -11,14 +11,14 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	"cosmomail/buildinfo"
-	"cosmomail/config"
-	"cosmomail/crypto"
-	"cosmomail/database"
-	"cosmomail/imap"
-	"cosmomail/oauth2"
-	"cosmomail/routes"
-	"cosmomail/sse"
+	"novamail/buildinfo"
+	"novamail/config"
+	"novamail/crypto"
+	"novamail/database"
+	"novamail/imap"
+	"novamail/oauth2"
+	"novamail/routes"
+	"novamail/sse"
 
 	"github.com/emersion/go-message"
 	"github.com/gofiber/fiber/v2"
@@ -29,7 +29,7 @@ import (
 // isProduction 通过 ldflags 注入：生产构建为 "true"，开发构建为 "false"
 var isProduction = "false"
 
-// @title           Cosmo Mail API
+// @title           NovaMail API
 // @version         1.0
 // @description     邮件代收服务 - IMAP 代理收信 + RESTful API
 // @host            localhost:8080
@@ -50,7 +50,7 @@ func main() {
 
 	// 生产构建自动静默 SQL 日志（database 包读取此环境变量）
 	if isProduction == "true" {
-		os.Setenv("COSMOMAIL_ENV", "production")
+		os.Setenv("NOVAMAIL_ENV", "production")
 	}
 	// 加载配置
 	cfg := config.Load()
@@ -76,8 +76,8 @@ func main() {
 	// 创建 Fiber 实例
 	// 关键配置：SSE 长连接需要较长的空闲超时和禁用写超时
 	app := fiber.New(fiber.Config{
-		AppName:            "Cosmo Mail",
-		ServerHeader:       "Cosmo Mail",
+		AppName:            "NovaMail",
+		ServerHeader:       "NovaMail",
 		IdleTimeout:        60 * time.Second,   // 长连接最大空闲时间（心跳间隔15s，留足余量）
 		ReadTimeout:        10 * time.Second,    // 读取请求头超时
 		WriteTimeout:       0,                   // 禁用写超时（SSE 长连接需要持续写入）
@@ -99,7 +99,7 @@ func main() {
 	// 注册 API 路由
 	routes.Register(app, db)
 
-	log.Printf("📦 Cosmo Mail %s 启动，数据目录: %s", buildinfo.Version, cfg.Database.DSN)
+	log.Printf("📦 NovaMail %s 启动，数据目录: %s", buildinfo.Version, cfg.Database.DSN)
 
 	// 初始化 SSE 实时推送服务
 	sse.InitBroker()
@@ -108,7 +108,7 @@ func main() {
 	go imap.StartWorkers(db, cfg)
 
 	// 启动 HTTP 服务，并在系统停止时优雅关闭连接和同步 Worker。
-	log.Printf("🚀 Cosmo Mail 服务启动于 http://localhost:%d", cfg.Server.Port)
+	log.Printf("🚀 NovaMail 服务启动于 http://localhost:%d", cfg.Server.Port)
 	serverErr := make(chan error, 1)
 	go func() {
 		serverErr <- app.Listen(cfg.Server.Addr())

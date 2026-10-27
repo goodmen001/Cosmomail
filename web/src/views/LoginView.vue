@@ -1,7 +1,7 @@
 <!--
   SPDX-License-Identifier: AGPL-3.0-or-later
   Copyright (C) 2026 magiccode (魔法代码)
-  Modifications Copyright (C) 2026 Cosmo Mail contributors
+  Modifications Copyright (C) 2026 NovaMail contributors
 -->
 <template>
   <div class="auth-page">
@@ -24,7 +24,7 @@
     </button>
 
     <main class="auth-layout">
-      <section class="brand-scene" aria-label="Cosmo Mail">
+      <section class="brand-scene" aria-label="NovaMail">
         <div class="brand-lockup">
           <div class="logo-orbit">
             <span class="orbit orbit-one"></span>
@@ -33,7 +33,7 @@
             <i class="satellite satellite-one"></i>
             <i class="satellite satellite-two"></i>
           </div>
-          <p class="brand-kicker">COSMO MAIL</p>
+          <p class="brand-kicker">NOVAMAIL</p>
           <h1>把所有邮箱，<br />收进同一片轨道。</h1>
           <p class="brand-copy">聚合多个邮箱账号，快速同步、集中阅读，让每一封重要邮件都准时抵达。</p>
           <div class="feature-row" aria-label="产品特点">
@@ -47,7 +47,7 @@
       <section class="auth-card" :class="{ 'register-card': isRegister }">
         <div class="mobile-brand">
           <img src="/icons/icon-128x128.png" alt="" />
-          <span>Cosmo Mail</span>
+          <span>NovaMail</span>
         </div>
 
         <transition name="panel-fade" mode="out-in">
@@ -55,7 +55,7 @@
             <header class="form-header">
               <p class="form-eyebrow">WELCOME BACK</p>
               <h2>登录你的收件空间</h2>
-              <p>使用管理员账号继续进入 Cosmo Mail</p>
+              <p>使用管理员账号继续进入 NovaMail</p>
             </header>
 
             <form class="auth-form" autocomplete="on" @submit.prevent="handleSubmit">
@@ -359,6 +359,89 @@ onMounted(async () => {
   --cosmo-card: rgba(31, 20, 39, 0.9);
   --cosmo-line: rgba(255, 255, 255, 0.1);
   background: #160e1e;
+}
+
+/* ---- 皮肤适配 ----
+   aurora：极光深空（暗色）/ 月白基调（亮色）；obsidian：曜石黑 + 霓虹青；moonlight：月白玻璃 + 柔和光晕 */
+
+/* 方案 B · 曜石暗黑（无论明暗模式均为黑底 HUD，霓虹青点缀） */
+:global(html[data-skin='obsidian'] .auth-page) {
+  --cosmo-ink: #dfeaf2;
+  --cosmo-muted: #7c93a5;
+  --cosmo-card: rgba(12, 15, 22, 0.86);
+  --cosmo-line: rgba(0, 180, 216, 0.28);
+  --cosmo-pink: #00b4d8;
+  --cosmo-purple: #7fe3ff;
+  --cosmo-mint: #00e5a0;
+  color: #dfeaf2;
+  background: #08090c;
+  backdrop-filter: none;
+}
+:global(html[data-skin='obsidian'] .auth-page .auth-card),
+:global(html[data-skin='obsidian'] .auth-page .register-card) {
+  background: rgba(12, 15, 22, 0.86);
+  border: 1px solid rgba(0, 180, 216, 0.28);
+  color: #dfeaf2;
+}
+:global(html[data-skin='obsidian'] .auth-page .auth-card h1),
+:global(html[data-skin='obsidian'] .auth-page .auth-card h2),
+:global(html[data-skin='obsidian'] .auth-page .auth-card .form-eyebrow),
+:global(html[data-skin='obsidian'] .auth-page .auth-card strong) {
+  color: #dfeaf2;
+}
+:global(html[data-skin='obsidian'] .auth-page .auth-card p),
+:global(html[data-skin='obsidian'] .auth-page .auth-card .form-hint),
+:global(html[data-skin='obsidian'] .auth-page .auth-card label) {
+  color: #7c93a5;
+}
+:global(html[data-skin='obsidian'] .auth-page .auth-card input) {
+  background: rgba(0, 180, 216, 0.05);
+  border: 1px solid rgba(0, 180, 216, 0.28);
+  color: #dfeaf2;
+}
+:global(html[data-skin='obsidian'] .aurora-pink) {
+  background: radial-gradient(circle, rgba(0, 180, 216, 0.35), rgba(124, 58, 237, 0.1) 58%, transparent 72%);
+}
+:global(html[data-skin='obsidian'] .aurora-mint) {
+  background: radial-gradient(circle, rgba(0, 229, 160, 0.22), rgba(0, 180, 216, 0.08) 62%, transparent 74%);
+}
+:global(html[data-skin='obsidian'] .star-field) {
+  color: rgba(0, 180, 216, 0.3);
+}
+
+/* 方案 C · 月白玻璃 */
+:global(html[data-skin='moonlight'] .auth-page) {
+  --cosmo-ink: #2b3350;
+  --cosmo-muted: #8a92ab;
+  --cosmo-card: rgba(255, 255, 255, 0.62);
+  --cosmo-line: rgba(255, 255, 255, 0.75);
+  --cosmo-pink: #f472b6;
+  --cosmo-purple: #6d8dff;
+  --cosmo-mint: #b4ffec;
+  background: linear-gradient(135deg, #eef2f9, #f7f4ef);
+}
+:global(html[data-skin='moonlight'] .auth-card) {
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: 0 12px 40px rgba(120, 140, 190, 0.18);
+}
+
+/* 方案 A · 极光玻璃（深色模式下的登录页即极光风格，浅色模式用月白基调微调） */
+:global(html[data-skin='aurora'] .auth-page) {
+  background: #050810;
+}
+:global(html[data-skin='aurora'][data-theme='dark'] .auth-page) {
+  --cosmo-ink: #e8ecf4;
+  --cosmo-muted: #8a93a6;
+  --cosmo-card: rgba(16, 22, 38, 0.62);
+  --cosmo-line: rgba(139, 157, 255, 0.22);
+  --cosmo-pink: #2ed5c4;
+  --cosmo-purple: #8b9dff;
+  --cosmo-mint: #5eead4;
+}
+:global(html[data-skin='aurora'][data-theme='dark'] .auth-card) {
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
 }
 
 .aurora {

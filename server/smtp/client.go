@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"cosmomail/models"
-	"cosmomail/oauth2"
-	"cosmomail/oauth2token"
-	"cosmomail/proxy"
+	"novamail/models"
+	"novamail/oauth2"
+	"novamail/oauth2token"
+	"novamail/proxy"
 
 	"gorm.io/gorm"
 )
@@ -303,7 +303,7 @@ func buildMessage(from string, to, cc, bcc []string, subject, textBody, htmlBody
 
 	sb.WriteString(fmt.Sprintf("Subject: =?UTF-8?B?%s?=\r\n", encodeBase64(subject)))
 	sb.WriteString(fmt.Sprintf("Date: %s\r\n", now))
-	sb.WriteString(fmt.Sprintf("Message-ID: <%s@cosmomail>\r\n", generateMessageIDShort()))
+	sb.WriteString(fmt.Sprintf("Message-ID: <%s@novamail>\r\n", generateMessageIDShort()))
 	sb.WriteString("MIME-Version: 1.0\r\n")
 
 	// 过滤无效附件
@@ -318,7 +318,7 @@ func buildMessage(from string, to, cc, bcc []string, subject, textBody, htmlBody
 	var bodyPart string
 	if htmlBody != "" {
 		// Multipart alternative: 纯文本 + HTML
-		boundary := "=_Cosmo Mail_" + randomBoundary()
+		boundary := "=_NovaMail_" + randomBoundary()
 		bodyPart += fmt.Sprintf("Content-Type: multipart/alternative; boundary=\"%s\"\r\n\r\n", boundary)
 		bodyPart += fmt.Sprintf("--%s\r\n", boundary)
 		bodyPart += "Content-Type: text/plain; charset=UTF-8\r\n"
@@ -338,7 +338,7 @@ func buildMessage(from string, to, cc, bcc []string, subject, textBody, htmlBody
 	// --- 组装 ---
 	if len(validAttachments) > 0 {
 		// multipart/mixed: 正文 + 附件
-		mixedBoundary := "=_Cosmo Mail Mixed_" + randomBoundary()
+		mixedBoundary := "=_NovaMail Mixed_" + randomBoundary()
 		sb.WriteString(fmt.Sprintf("Content-Type: multipart/mixed; boundary=\"%s\"\r\n\r\n", mixedBoundary))
 		sb.WriteString(fmt.Sprintf("--%s\r\n", mixedBoundary))
 		sb.WriteString(bodyPart)

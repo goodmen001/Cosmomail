@@ -1,6 +1,6 @@
 {
-  "appId": "com.goodmen001.cosmomail",
-  "appName": "Cosmo Mail",
+  "appId": "com.goodmen001.novamail",
+  "appName": "NovaMail",
   "webDir": "dist-web",
   "server": {
     "androidScheme": "http",

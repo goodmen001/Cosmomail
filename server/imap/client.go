@@ -14,12 +14,12 @@ import (
 	"sync"
 	"time"
 
-	"cosmomail/buildinfo"
-	"cosmomail/config"
-	"cosmomail/models"
-	"cosmomail/oauth2"
-	pop3pkg "cosmomail/pop3"
-	"cosmomail/proxy"
+	"novamail/buildinfo"
+	"novamail/config"
+	"novamail/models"
+	"novamail/oauth2"
+	pop3pkg "novamail/pop3"
+	"novamail/proxy"
 
 	"github.com/emersion/go-imap/v2"
 	"github.com/emersion/go-imap/v2/imapclient"
@@ -268,9 +268,9 @@ func (c *IMAPClient) sendClientID() {
 	}
 
 	idData := &imap.IDData{
-		Name:    "Cosmo Mail",
+		Name:    "NovaMail",
 		Version: buildinfo.Version,
-		Vendor:  "Cosmo Mail",
+		Vendor:  "NovaMail",
 	}
 	if _, err := c.Client.ID(idData).Wait(); err != nil {
 		// ID 命令失败不阻塞登录（部分服务器可能不支持），仅记录日志

@@ -13,7 +13,7 @@ server/mail-proxy.exe
 server/dist
 
 /bin/
-fnapp/app/server/cosmomail
+fnapp/app/server/novamail
 fnapp/*.fpk
 /*.fpk
 

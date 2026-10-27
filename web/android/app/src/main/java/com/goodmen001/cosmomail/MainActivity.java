@@ -1,4 +1,4 @@
-package com.goodmen001.cosmomail;
+package com.goodmen001.novamail;
 
 import com.getcapacitor.BridgeActivity;
 

@@ -21,9 +21,9 @@ import (
 
 // Webhook header names must be RFC 7230 tokens; product display names may contain spaces.
 const (
-	HeaderEvent     = "X-Cosmomail-Event"
-	HeaderTimestamp = "X-Cosmomail-Timestamp"
-	HeaderSignature = "X-Cosmomail-Signature"
+	HeaderEvent     = "X-NovaMail-Event"
+	HeaderTimestamp = "X-NovaMail-Timestamp"
+	HeaderSignature = "X-NovaMail-Signature"
 )
 
 // WebhookPayload 推送数据结构
@@ -165,7 +165,7 @@ func doDispatch(h *hookInfo, payload Payload, event string) *dispatchResult {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "Cosmo Mail-Webhook/1.0")
+	req.Header.Set("User-Agent", "NovaMail-Webhook/1.0")
 	req.Header.Set(HeaderEvent, payload.Event)
 	req.Header.Set(HeaderTimestamp, fmt.Sprintf("%d", payload.Timestamp))
 

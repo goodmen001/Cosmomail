@@ -1,6 +1,6 @@
 [
   {
-    "stepTitle": "Cosmo Mail 服务配置",
+    "stepTitle": "NovaMail 服务配置",
     "items": [
       {
         "type": "text",
@@ -20,7 +20,7 @@
       },
       {
         "type": "tips",
-        "helpText": "数据库与附件保存在应用数据目录下的 cosmomail-data 共享文件夹（安装后自动创建，可在文件管理器中查看和备份）。"
+        "helpText": "数据库与附件保存在应用数据目录下的 novamail-data 共享文件夹（安装后自动创建，可在文件管理器中查看和备份）。"
       }
     ]
   }

@@ -8,7 +8,7 @@
     <div class="sidebar-logo">
       <button class="logo-btn" @click="$emit('navigate', '/mails')">
         <img class="sidebar-brand-icon" src="/icons/icon-64x64.png" alt="" />
-        <span v-show="!collapsed" class="logo-text">Cosmo Mail</span>
+        <span v-show="!collapsed" class="logo-text">NovaMail</span>
       </button>
       <button v-if="isMobile && !collapsed" class="btn-icon btn-ghost close-btn" @click="mobileOpen = false">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">

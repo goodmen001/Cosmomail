@@ -97,7 +97,7 @@ const isLoggedIn = computed(() => authStore.isLoggedIn)
 const authInitialized = ref(false)
 
 // 侧边栏折叠状态（从 localStorage 恢复，默认根据屏幕宽度判断）
-const SIDEBAR_KEY = 'cosmomail-sidebar-collapsed'
+const SIDEBAR_KEY = 'novamail-sidebar-collapsed'
 function getInitialCollapsed() {
   const stored = localStorage.getItem(SIDEBAR_KEY)
   if (stored !== null) return stored === 'true'

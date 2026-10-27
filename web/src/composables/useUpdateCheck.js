@@ -11,7 +11,7 @@
  */
 import { ref } from 'vue'
 
-const CACHE_KEY = 'cosmomail-update-check'
+const CACHE_KEY = 'novamail-update-check'
 const CACHE_DURATION = 60 * 60 * 1000 // 1 小时缓存
 
 // 全局单例状态（多个组件共享同一份检查结果）
@@ -126,7 +126,7 @@ export function useUpdateCheck() {
       // 用户已忽略过同一版本则不再提示
       if (hasUpdate.value) {
         try {
-          if (localStorage.getItem('cosmomail-update-dismissed') === data.latest) {
+          if (localStorage.getItem('novamail-update-dismissed') === data.latest) {
             hasUpdate.value = false
           }
         } catch {
@@ -148,7 +148,7 @@ export function useUpdateCheck() {
   function dismiss() {
     hasUpdate.value = false
     try {
-      localStorage.setItem('cosmomail-update-dismissed', latestVersion.value || '')
+      localStorage.setItem('novamail-update-dismissed', latestVersion.value || '')
     } catch {
       // ignore
     }

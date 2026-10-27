@@ -1,6 +1,6 @@
 # 注册 Microsoft Azure AD 应用
 
-本教程将指导你完成 Azure AD 应用注册，使 Cosmo Mail 能够通过 OAuth2 协议连接 Outlook / Hotmail 邮箱。
+本教程将指导你完成 Azure AD 应用注册，使 NovaMail 能够通过 OAuth2 协议连接 Outlook / Hotmail 邮箱。
 
 ## 为什么需要注册？
 
@@ -8,7 +8,7 @@
 微软自 2022 年起逐步禁用了 IMAP/SMTP 的传统密码认证方式（Basic Auth），
 要求所有第三方应用必须使用 **OAuth2** 进行身份验证。
 
-Cosmo Mail 采用**设备码流 (Device Code Flow)** 实现这一过程，
+NovaMail 采用**设备码流 (Device Code Flow)** 实现这一过程，
 无需配置回调 URL，用户只需在浏览器输入验证码即可完成授权。
 ::::
 
@@ -51,7 +51,7 @@ Cosmo Mail 采用**设备码流 (Device Code Flow)** 实现这一过程，
 
 | 字段 | 填写内容 | 说明 |
 |------|----------|------|
-| **名称** | `Cosmo Mail OAuth` | 随意填写，用于标识你的应用 |
+| **名称** | `NovaMail OAuth` | 随意填写，用于标识你的应用 |
 | **支持的账户类型** | 见下方详解 | ⚠️ 关键选项 |
 | **重定向 URI (可选)** | 留空 | 设备码流不需要 |
 
@@ -122,7 +122,7 @@ Graph Token 无法用于 IMAP XOAUTH2 认证，会导致 `NO AUTHENTICATE failed
 2. 找到 **应用程序(客户端) ID)** 字段
 3. 点击右侧的 **复制** 图标，保存这个值
 
-这就是 Cosmo Mail 所需的 **Client ID**，格式类似：
+这就是 NovaMail 所需的 **Client ID**，格式类似：
 
 ```
 a1b2c3d4-e5f6-7890-abcd-ef1234567890
@@ -146,14 +146,14 @@ a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
 ---
 
-## 步骤六：将 Client ID 配置到 Cosmo Mail
+## 步骤六：将 Client ID 配置到 NovaMail
 
-获取 Client ID 后，有以下三种方式将其提供给 Cosmo Mail：
+获取 Client ID 后，有以下三种方式将其提供给 NovaMail：
 
 ### 方式 A：环境变量（推荐）
 
 ```bash
-export COSMOMAIL_OAUTH_MICROSOFT_CLIENT_ID="a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+export NOVAMAIL_OAUTH_MICROSOFT_CLIENT_ID="a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 ```
 
 适用于生产环境，可在服务环境变量或启动命令中设置。
@@ -179,7 +179,7 @@ const microsoftDefaultClientID = "你的实际 Client ID"
 
 完成以上所有步骤后，你可以验证 OAuth2 功能是否正常工作：
 
-1. 启动 Cosmo Mail 服务
+1. 启动 NovaMail 服务
 2. 进入 Web UI → 设置 → 邮箱管理 → 添加账号
 3. 选择 **Outlook / Hotmail** 服务商卡片（带有 🔒 OAuth2 标识）
 4. 输入邮箱地址和显示名称
@@ -223,7 +223,7 @@ const microsoftDefaultClientID = "你的实际 Client ID"
 
 ```bash
 # 1. 查看服务端日志中的 OAuth2 相关输出
-grep -E "(XOAUTH2|RefreshToken|OAuth)" cosmomail.log
+grep -E "(XOAUTH2|RefreshToken|OAuth)" novamail.log
 
 # 2. 确认已添加 Mail.Read 和 Mail.Send 权限（步骤 3.2）
 #    缺少权限会导致认证被拒
@@ -241,7 +241,7 @@ grep -E "(XOAUTH2|RefreshToken|OAuth)" cosmomail.log
 <details>
 <summary><strong>国内网络无法连接微软 OAuth2 端点</strong></summary>
 
-Cosmo Mail 的 HTTP 客户端会自动读取系统代理环境变量：
+NovaMail 的 HTTP 客户端会自动读取系统代理环境变量：
 
 ```bash
 # 设置代理（如需要）

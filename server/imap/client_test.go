@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"cosmomail/models"
+	"novamail/models"
 
 	"github.com/emersion/go-imap/v2/imapclient"
 )

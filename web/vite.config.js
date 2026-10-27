@@ -25,8 +25,8 @@ export default defineConfig({
       // 自定义 Service Worker 源文件（含 push 事件处理）
       swSrc: resolve(__dirname, 'src/sw.js'),
       manifest: {
-        name: 'Cosmo Mail',
-        short_name: 'Cosmo Mail',
+        name: 'NovaMail',
+        short_name: 'NovaMail',
         description: '多邮箱 IMAP 代收客户端',
         theme_color: '#4F6EF7',
         background_color: '#ffffff',

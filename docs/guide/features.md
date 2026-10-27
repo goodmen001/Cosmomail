@@ -80,7 +80,7 @@
 
 ### Web Push (VAPID)
 
-基于 Web Push Protocol 和 VAPID 标准，即使关闭 Cosmo Mail 页面，浏览器也能收到新邮件通知：
+基于 Web Push Protocol 和 VAPID 标准，即使关闭 NovaMail 页面，浏览器也能收到新邮件通知：
 
 - 自动生成 ECDSA P-256 VAPID 密钥对
 - 支持 Chrome (GCM/FCM)、Safari (APS)、Firefox 等主流浏览器

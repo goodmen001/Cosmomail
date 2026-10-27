@@ -2,20 +2,20 @@ import { defineConfig } from 'vitepress'
 
 /**
  * 通过环境变量 VITEPRESS_BASE 设置部署基础路径（二级目录）
- * 例如部署在 /cosmomail 下：VITEPRESS_BASE=/cosmomail npm run docs:build
+ * 例如部署在 /novamail 下：VITEPRESS_BASE=/novamail npm run docs:build
  *
  * 规则：
  *   未设置或为空 → 默认 '/'（根路径部署）
- *   缺少前导 / → 自动补全（如 cosmomail → /cosmomail）
- *   尾部有多余 / → 自动去除（如 /cosmomail/ → /cosmomail）
+ *   缺少前导 / → 自动补全（如 novamail → /novamail）
+ *   尾部有多余 / → 自动去除（如 /novamail/ → /novamail）
  */
 const rawBase = process.env.VITEPRESS_BASE || '/'
 const normalizedBase = rawBase.trim().replace(/^([^/])/, '/$1')
 const base = normalizedBase === '/' ? '/' : `${normalizedBase.replace(/\/+$/, '')}/`
 
 export default defineConfig({
-  title: 'Cosmo Mail',
-  description: 'Cosmo Mail - 快速、私有的统一邮件管理平台',
+  title: 'NovaMail',
+  description: 'NovaMail - 快速、私有的统一邮件管理平台',
   lang: 'zh-CN',
   base,
   cleanUrls: true,
@@ -34,13 +34,13 @@ export default defineConfig({
   head: [
     ['link', { rel: 'icon', type: 'image/png', href: `${base}icon.png` }],
     ['meta', { name: 'theme-color', content: '#8b5cf6' }],
-    ['meta', { property: 'og:title', content: 'Cosmo Mail' }],
+    ['meta', { property: 'og:title', content: 'NovaMail' }],
     ['meta', { property: 'og:description', content: '快速、私有的多邮箱统一管理平台' }],
   ],
 
   themeConfig: {
     logo: `${base}icon.png`,
-    siteTitle: 'Cosmo Mail',
+    siteTitle: 'NovaMail',
 
     nav: [
       { text: '指南', link: '/guide/getting-started' },
@@ -118,7 +118,7 @@ export default defineConfig({
     },
 
     footer: {
-      copyright: 'Copyright © Cosmo Mail',
+      copyright: 'Copyright © NovaMail',
     },
 
     search: {

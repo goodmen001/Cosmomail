@@ -6,7 +6,7 @@ import { ref, computed } from 'vue'
 import * as authApi from '@/api/auth'
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref(localStorage.getItem('cosmomail-token') || '')
+  const token = ref(localStorage.getItem('novamail-token') || '')
   const username = ref('')
   const setupRequired = ref(false)
   const registrationEnabled = ref(false)
@@ -57,7 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
   function setToken(newToken, name) {
     token.value = newToken
     username.value = name || ''
-    localStorage.setItem('cosmomail-token', newToken || '')
+    localStorage.setItem('novamail-token', newToken || '')
   }
 
   // 从 JWT payload 解析完整信息（纯前端解析）
@@ -71,7 +71,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = ''
     username.value = ''
     isAdmin.value = false
-    localStorage.removeItem('cosmomail-token')
+    localStorage.removeItem('novamail-token')
   }
 
   // 从 JWT payload 解析用户名（纯前端解析，无需后端请求）

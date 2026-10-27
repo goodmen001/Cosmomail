@@ -13,8 +13,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"cosmomail/config"
-	"cosmomail/models"
+	"novamail/config"
+	"novamail/models"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -222,7 +222,7 @@ func (s *AuthService) GetAuthStatus() *models.AuthStatusResponse {
 		return &models.AuthStatusResponse{
 			SetupRequired:       true,
 			RegistrationEnabled: true,
-			Message:             "欢迎使用 Cosmo Mail，请先创建管理员账号",
+			Message:             "欢迎使用 NovaMail，请先创建管理员账号",
 		}
 	}
 	return &models.AuthStatusResponse{

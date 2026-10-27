@@ -8,7 +8,7 @@ import { getServerBase } from '@/api/serverBase'
  * 从 localStorage 获取认证 Token
  */
 function getToken() {
-  return localStorage.getItem('cosmomail-token')
+  return localStorage.getItem('novamail-token')
 }
 
 /**

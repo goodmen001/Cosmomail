@@ -11,8 +11,8 @@ import (
 	"log"
 	"time"
 
-	"cosmomail/models"
-	"cosmomail/oauth2"
+	"novamail/models"
+	"novamail/oauth2"
 
 	"gorm.io/gorm"
 )

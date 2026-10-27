@@ -1,15 +1,15 @@
 #!/bin/bash
 
-LOG_FILE="${TRIM_PKGVAR}/cosmomail.log"
-PID_FILE="${TRIM_PKGVAR}/cosmomail.pid"
+LOG_FILE="${TRIM_PKGVAR}/novamail.log"
+PID_FILE="${TRIM_PKGVAR}/novamail.pid"
 
 # 数据目录解析（按官方规范实现自定义目录，优先级从高到低）：
 #   1. 安装向导填写的自定义目录（TRIM_PKGETC/data_dir，写测试通过才采用）
 #   2. 管理员「应用共享授权」目录（官方 trim.file.sharedAccess 机制，
 #      fnOS 应用设置中授权后系统自动授予应用账号 ACL 权限，数据落在
-#      <授权目录>/cosmomail-data，文件管理器可见可备份）
+#      <授权目录>/novamail-data，文件管理器可见可备份）
 #   3. config/resource 声明的 data-share 共享目录（TRIM_DATA_SHARE_PATHS，
-#      安装时系统自动创建 cosmomail-data 共享文件夹）
+#      安装时系统自动创建 novamail-data 共享文件夹）
 #   4. TRIM_PKGVAR/data（官方运行数据目录，最终兜底）
 # 查询管理员「应用共享授权」目录（仅管理员可授权，应用账号只读查询结果）
 query_authorized_dir() {
@@ -19,7 +19,7 @@ query_authorized_dir() {
         -X POST http://localhost/api/v1/trimapp \
         -H 'Content-Type: application/json' \
         -H "Authorization: Bearer ${TRIM_API_TOKEN}" \
-        -d "{\"reqId\":\"1\",\"req\":\"trim.file.getSharedAccessibleFolders\",\"appName\":\"com.goodmen001.cosmomail\",\"data\":{}}" \
+        -d "{\"reqId\":\"1\",\"req\":\"trim.file.getSharedAccessibleFolders\",\"appName\":\"com.goodmen001.novamail\",\"data\":{}}" \
         2>/dev/null \
         | sed -n 's/.*"paths":\[[^]]*"\([^"]*\)".*/\1/p' | head -n 1
 }
@@ -41,10 +41,10 @@ resolve_data_dir() {
                 fi ;;
         esac
     fi
-    # 2. 管理员共享授权目录（数据放在其下 cosmomail-data 子目录）
+    # 2. 管理员共享授权目录（数据放在其下 novamail-data 子目录）
     share="$(query_authorized_dir)"
-    if [ -n "${share}" ] && write_test "${share}/cosmomail-data"; then
-        printf '%s' "${share}/cosmomail-data"
+    if [ -n "${share}" ] && write_test "${share}/novamail-data"; then
+        printf '%s' "${share}/novamail-data"
         return 0
     fi
     # 3. data-share 声明的共享目录（可能是 "path1:path2"，取第一个）
@@ -56,7 +56,7 @@ resolve_data_dir() {
         fi
     fi
     # 3b. data-share 不可用时（旧版升级/变量缺失），尝试 /var/apps/<appname>/share 软链
-    for share in /var/apps/*/share/cosmomail-data; do
+    for share in /var/apps/*/share/novamail-data; do
         if [ -d "${share}" ] && write_test "${share}"; then
             printf '%s' "${share}"
             return 0
@@ -68,7 +68,7 @@ resolve_data_dir() {
 }
 DATA_DIR="$(resolve_data_dir)"
 
-APP_BIN="${TRIM_APPDEST}/server/cosmomail"
+APP_BIN="${TRIM_APPDEST}/server/novamail"
 PORT_FILE="${TRIM_PKGETC}/port"
 APP_PORT="${wizard_port:-${TRIM_SERVICE_PORT:-8800}}"
 
@@ -116,15 +116,15 @@ start_process() {
     fi
     chmod 700 "${DATA_DIR}" 2>/dev/null
     chmod +x "${APP_BIN}" 2>/dev/null
-    log_msg "Starting Cosmo Mail on port ${APP_PORT} (data dir: ${DATA_DIR})"
+    log_msg "Starting NovaMail on port ${APP_PORT} (data dir: ${DATA_DIR})"
 
     (
         cd "${TRIM_PKGVAR}" || exit 1
-        export COSMOMAIL_ENV=production
-        export COSMOMAIL_HOST=0.0.0.0
-        export COSMOMAIL_PORT="${APP_PORT}"
-        export COSMOMAIL_DSN="${DATA_DIR}/cosmomail.db"
-        export COSMOMAIL_DATA_DIR="${DATA_DIR}"
+        export NOVAMAIL_ENV=production
+        export NOVAMAIL_HOST=0.0.0.0
+        export NOVAMAIL_PORT="${APP_PORT}"
+        export NOVAMAIL_DSN="${DATA_DIR}/novamail.db"
+        export NOVAMAIL_DATA_DIR="${DATA_DIR}"
         exec "${APP_BIN}"
     ) >> "${LOG_FILE}" 2>&1 &
 
@@ -139,7 +139,7 @@ start_process() {
         count=$((count + 1))
     done
     if ! status; then
-        log_msg "Cosmo Mail failed to start"
+        log_msg "NovaMail failed to start"
         return 1
     fi
     return 0
@@ -153,7 +153,7 @@ stop_process() {
         return 0
     fi
 
-    log_msg "Stopping Cosmo Mail (pid=${pid})"
+    log_msg "Stopping NovaMail (pid=${pid})"
     kill -TERM "${pid}" 2>/dev/null || true
     local count=0
     while check_process "${pid}" && [ "${count}" -lt 15 ]; do

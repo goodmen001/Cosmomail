@@ -14,7 +14,7 @@ if (isNativeApp()) {
     .catch(() => { Badge = null })
 }
 
-const COUNT_KEY = 'cosmomail-badge-count'
+const COUNT_KEY = 'novamail-badge-count'
 
 function readLastCount() {
   const n = parseInt(localStorage.getItem(COUNT_KEY) || '0', 10)
@@ -64,7 +64,7 @@ export function updateBadge(unreadCount) {
 /** 页面可见时以服务端统计为准刷新角标 */
 export async function refreshBadgeFromStats() {
   try {
-    const token = localStorage.getItem('cosmomail-token')
+    const token = localStorage.getItem('novamail-token')
     if (!token) return
     const res = await fetch(`${apiBase()}/mails/stats`, {
       headers: { Authorization: `Bearer ${token}` }

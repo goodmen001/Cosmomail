@@ -34,7 +34,7 @@ request.interceptors.request.use(
   (config) => {
     // 每次请求时重算 baseURL，支持登录页修改服务器地址后立即生效
     config.baseURL = apiBase()
-    const token = localStorage.getItem('cosmomail-token')
+    const token = localStorage.getItem('novamail-token')
     if (token) config.headers.Authorization = `Bearer ${token}`
     return config
   },
@@ -69,7 +69,7 @@ request.interceptors.response.use(
         break
       case 401:
         console.warn('[API] 未认证，跳转登录页')
-        localStorage.removeItem('cosmomail-token')
+        localStorage.removeItem('novamail-token')
         navigateToLogin()
         break
       case 403:

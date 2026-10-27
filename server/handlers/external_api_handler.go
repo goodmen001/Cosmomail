@@ -6,8 +6,8 @@ package handlers
 import (
 	"strconv"
 
-	"cosmomail/models"
-	"cosmomail/services"
+	"novamail/models"
+	"novamail/services"
 
 	"github.com/gofiber/fiber/v2"
 )

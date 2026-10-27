@@ -5,7 +5,7 @@ package handlers
 
 import (
 	"fmt"
-	"cosmomail/services"
+	"novamail/services"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"

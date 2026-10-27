@@ -78,8 +78,8 @@ const router = createRouter({
 // 路由守卫：认证检查 + 页面标题更新
 router.beforeEach(async (to) => {
   document.title = to.meta.title
-    ? `${to.meta.title} - Cosmo Mail`
-    : 'Cosmo Mail'
+    ? `${to.meta.title} - NovaMail`
+    : 'NovaMail'
 
   // 公开页面（登录）直接放行
   if (to.meta.public) return

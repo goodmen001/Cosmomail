@@ -15,8 +15,8 @@ import (
 	"net/http"
 	"time"
 
-	"cosmomail/models"
-	"cosmomail/notifier"
+	"novamail/models"
+	"novamail/notifier"
 
 	"gorm.io/gorm"
 )
@@ -149,7 +149,7 @@ func (s *WebhookService) Test(userID, id uint) (*TestResult, error) {
 	payload := models.WebhookPayload{
 		Event:     "test",
 		Timestamp: time.Now().Unix(),
-		Data:      map[string]interface{}{"message": "Cosmo Mail Webhook 测试"},
+		Data:      map[string]interface{}{"message": "NovaMail Webhook 测试"},
 	}
 
 	result := s.dispatch(&hook, payload)
@@ -185,7 +185,7 @@ func (s *WebhookService) dispatch(hook *models.Webhook, payload models.WebhookPa
 
 	// 设置标准请求头
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "Cosmo Mail-Webhook/1.0")
+	req.Header.Set("User-Agent", "NovaMail-Webhook/1.0")
 	req.Header.Set(notifier.HeaderEvent, payload.Event)
 	req.Header.Set(notifier.HeaderTimestamp, fmt.Sprintf("%d", payload.Timestamp))
 

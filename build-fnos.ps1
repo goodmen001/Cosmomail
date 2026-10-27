@@ -1,5 +1,5 @@
 param(
-    [string]$BinaryPath = "bin/cosmomail-linux-amd64",
+    [string]$BinaryPath = "bin/novamail-linux-amd64",
     [string]$FnpackPath = ""
 )
 
@@ -11,7 +11,7 @@ $serverDir = Join-Path $packageDir "app/server"
 $uiImagesDir = Join-Path $packageDir "app/ui/images"
 
 New-Item -ItemType Directory -Force -Path $serverDir, $uiImagesDir | Out-Null
-Copy-Item -LiteralPath $binary -Destination (Join-Path $serverDir "cosmomail") -Force
+Copy-Item -LiteralPath $binary -Destination (Join-Path $serverDir "novamail") -Force
 Copy-Item -LiteralPath (Join-Path $projectRoot "public/images/icon_64.png") -Destination (Join-Path $uiImagesDir "icon-64.png") -Force
 Copy-Item -LiteralPath (Join-Path $projectRoot "public/images/icon_256.png") -Destination (Join-Path $uiImagesDir "icon-256.png") -Force
 Copy-Item -LiteralPath (Join-Path $projectRoot "public/images/icon_64.png") -Destination (Join-Path $packageDir "ICON.PNG") -Force
@@ -35,7 +35,7 @@ try {
     Pop-Location
 }
 
-$rawPackage = Join-Path $packageDir "com.goodmen001.cosmomail.fpk"
+$rawPackage = Join-Path $packageDir "com.goodmen001.novamail.fpk"
 if (-not (Test-Path -LiteralPath $rawPackage)) {
     throw "fnpack did not produce an fpk file"
 }

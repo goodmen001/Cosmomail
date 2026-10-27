@@ -2,12 +2,12 @@
 layout: home
 
 hero:
-  name: Cosmo Mail
+  name: NovaMail
   text: 所有邮箱，一处抵达
   tagline: 自托管的多邮箱统一收件箱。数据留在自己的服务器上，邮件、附件、通知与自动化集中管理。
   image:
     src: /icon.png
-    alt: Cosmo Mail
+    alt: NovaMail
   actions:
     - theme: brand
       text: 立即部署
@@ -45,14 +45,14 @@ features:
 ### 1. 下载部署脚本
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/goodmen001/Cosmomail/main/deploy.sh -o cosmomail.sh
-chmod +x cosmomail.sh
+curl -fsSL https://raw.githubusercontent.com/goodmen001/Cosmomail/main/deploy.sh -o novamail.sh
+chmod +x novamail.sh
 ```
 
 ### 2. 安装并启动
 
 ```bash
-sudo ./cosmomail.sh install
+sudo ./novamail.sh install
 ```
 
 ### 3. 打开管理界面
@@ -66,11 +66,11 @@ sudo ./cosmomail.sh install
 ## 日常管理
 
 ```bash
-cosmomail status      # 查看运行状态
-cosmomail logs        # 查看实时日志
-cosmomail restart     # 重启服务
-cosmomail update      # 更新到最新版
-cosmomail doctor      # 环境健康检查
+novamail status      # 查看运行状态
+novamail logs        # 查看实时日志
+novamail restart     # 重启服务
+novamail update      # 更新到最新版
+novamail doctor      # 环境健康检查
 ```
 
 ## 技术架构
@@ -83,4 +83,4 @@ cosmomail doctor      # 环境健康检查
 | 通知 | SSE、Web Push、Webhook |
 | 部署 | Linux systemd、macOS、Windows 原生二进制 |
 
-全部源代码、版本发布和问题跟踪都在 [Cosmo Mail GitHub 仓库](https://github.com/goodmen001/Cosmomail)。
+全部源代码、版本发布和问题跟踪都在 [NovaMail GitHub 仓库](https://github.com/goodmen001/Cosmomail)。

@@ -136,7 +136,7 @@ c.Status(statusCode).JSON(fiber.Map{"code": errorCode, "message": "错误描述"
 go run .
 
 # 构建
-go build -o ../bin/cosmomail .
+go build -o ../bin/novamail .
 
 # 运行测试
 go test ./...

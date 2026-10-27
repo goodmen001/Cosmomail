@@ -187,7 +187,7 @@ async function downloadWithProgress(att) {
  * 带进度的下载请求（使用原生 axios 避免 request 拦截器对 blob 的干扰）
  */
 async function downloadAttachmentWithProgress(id, onProgress) {
-  const token = localStorage.getItem('cosmomail-token')
+  const token = localStorage.getItem('novamail-token')
   const headers = {}
   if (token) headers['Authorization'] = `Bearer ${token}`
 

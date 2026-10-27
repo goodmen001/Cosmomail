@@ -1,7 +1,7 @@
 {
   ".url": {
-    "com.goodmen001.cosmomail.Application": {
-      "title": "Cosmo Mail",
+    "com.goodmen001.novamail.Application": {
+      "title": "NovaMail",
       "icon": "images/icon-{0}.png",
       "type": "url",
       "protocol": "http",

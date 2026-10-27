@@ -51,7 +51,7 @@ const props = defineProps({
 const route = useRoute()
 const router = useRouter()
 
-const COLLAPSE_KEY = 'cosmomail-tabbar-collapsed'
+const COLLAPSE_KEY = 'novamail-tabbar-collapsed'
 const collapsed = ref(localStorage.getItem(COLLAPSE_KEY) !== 'false') // 默认收起
 
 function toggle(v) {

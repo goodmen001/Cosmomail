@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
-	"cosmomail/config"
-	"cosmomail/models"
-	"cosmomail/storage"
+	"novamail/config"
+	"novamail/models"
+	"novamail/storage"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/encoding/unicode"

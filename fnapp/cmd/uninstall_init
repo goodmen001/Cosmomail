@@ -2,8 +2,8 @@
 
 ### 卸载前准备：停止应用进程（数据删除在 uninstall_callback 中按用户选择执行）
 
-LOG_FILE="${TRIM_PKGVAR}/cosmomail.log"
-PID_FILE="${TRIM_PKGVAR}/cosmomail.pid"
+LOG_FILE="${TRIM_PKGVAR}/novamail.log"
+PID_FILE="${TRIM_PKGVAR}/novamail.pid"
 
 read_pid() {
     [ -r "${PID_FILE}" ] || return 1
@@ -21,7 +21,7 @@ if [ -n "${PID}" ] && kill -0 "${PID}" 2>/dev/null; then
     done
     kill -KILL "${PID}" 2>/dev/null || true
 fi
-pkill -f "cosmomail" 2>/dev/null || true
+pkill -f "novamail" 2>/dev/null || true
 rm -f "${PID_FILE}"
 
 exit 0

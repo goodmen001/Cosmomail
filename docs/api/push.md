@@ -67,7 +67,7 @@
 ```json
 {
   "title": "测试推送",
-  "body": "这是一条来自 Cosmo Mail 的测试通知",
+  "body": "这是一条来自 NovaMail 的测试通知",
   "icon": "/icon_192.png"
 }
 ```
@@ -78,8 +78,8 @@ VAPID 密钥对用于标识应用服务器来源，确保只有你的服务器�
 
 - **首次启动时自动生成** ECDSA P-256 密钥对并持久化到数据库
 - **支持环境变量覆盖**：
-  - `COSMOMAIL_VAPID_PUBLIC_KEY`
-  - `COSMOMAIL_VAPID_PRIVATE_KEY`
+  - `NOVAMAIL_VAPID_PUBLIC_KEY`
+  - `NOVAMAIL_VAPID_PRIVATE_KEY`
 - **密钥优先级**：环境变量 > 数据库存储值 > 首次启动自动生成
 
 ## 客户端集成

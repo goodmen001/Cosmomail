@@ -14,15 +14,15 @@ import (
 	"path"
 	"strings"
 
-	"cosmomail/config"
-	"cosmomail/buildinfo"
-	"cosmomail/embedfs"
-	"cosmomail/handlers"
-	"cosmomail/middleware"
-	"cosmomail/models"
-	"cosmomail/notifier"
-	"cosmomail/services"
-	"cosmomail/sse"
+	"novamail/config"
+	"novamail/buildinfo"
+	"novamail/embedfs"
+	"novamail/handlers"
+	"novamail/middleware"
+	"novamail/models"
+	"novamail/notifier"
+	"novamail/services"
+	"novamail/sse"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -243,7 +243,7 @@ func Register(app *fiber.App, db *gorm.DB) {
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"status":  "ok",
-			"service": "cosmomail",
+			"service": "novamail",
 			"version": buildinfo.Version,
 		})
 	})
@@ -262,19 +262,19 @@ func Register(app *fiber.App, db *gorm.DB) {
 
 // isDevMode 判断是否为开发环境
 func isDevMode() bool {
-	mode := os.Getenv("COSMOMAIL_ENV")
+	mode := os.Getenv("NOVAMAIL_ENV")
 	return mode == "dev" || mode == "development"
 }
 
 // EnsureVAPIDKeys 确保 VAPID 密钥对存在：
 //   - 首次启动时自动生成 ECDSA P-256 密钥对
 //   - DER 编码后 base64 存入 AppConfig 表
-//   - 支持环境变量 COSMOMAIL_VAPID_PUBLIC_KEY / COSMOMAIL_VAPID_PRIVATE_KEY 覆盖
+//   - 支持环境变量 NOVAMAIL_VAPID_PUBLIC_KEY / NOVAMAIL_VAPID_PRIVATE_KEY 覆盖
 //
 // 返回 (privateKey, publicKeyDER, error)
 func EnsureVAPIDKeys(db *gorm.DB) (*ecdsa.PrivateKey, []byte, error) {
-	envPub := os.Getenv("COSMOMAIL_VAPID_PUBLIC_KEY")
-	envPriv := os.Getenv("COSMOMAIL_VAPID_PRIVATE_KEY")
+	envPub := os.Getenv("NOVAMAIL_VAPID_PUBLIC_KEY")
+	envPriv := os.Getenv("NOVAMAIL_VAPID_PRIVATE_KEY")
 
 	var cfg models.AppConfig
 	result := db.First(&cfg)

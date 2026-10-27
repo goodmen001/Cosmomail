@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"cosmomail/models"
+	"novamail/models"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"

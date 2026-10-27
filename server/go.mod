@@ -1,4 +1,4 @@
-module cosmomail
+module novamail
 
 go 1.25.0
 

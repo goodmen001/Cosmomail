@@ -20,7 +20,7 @@ const (
 	microsoftDeviceCodeEndpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/devicecode"
 	microsoftTokenEndpoint      = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
 
-	// Microsoft 默认 Client ID（Cosmo Mail 开发者应用）
+	// Microsoft 默认 Client ID（NovaMail 开发者应用）
 	microsoftDefaultClientID = "0051d6e3-655d-4b1f-ab63-6695bb65d3f1"
 
 	// Microsoft 授权范围（用户委托流程必须使用 outlook.office.com，不能用 outlook.office365.com）
@@ -61,7 +61,7 @@ func (p *MicrosoftProvider) DefaultClientID() string {
 }
 
 func (p *MicrosoftProvider) EnvVarName() string {
-	return "COSMOMAIL_OAUTH_MICROSOFT_CLIENT_ID"
+	return "NOVAMAIL_OAUTH_MICROSOFT_CLIENT_ID"
 }
 
 func (p *MicrosoftProvider) GetDeviceCode(ctx context.Context, clientID string) (*DeviceCodeResponse, error) {

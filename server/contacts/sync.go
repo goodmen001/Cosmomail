@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"cosmomail/models"
+	"novamail/models"
 
 	"gorm.io/gorm"
 )

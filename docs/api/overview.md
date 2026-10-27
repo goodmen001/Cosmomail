@@ -1,6 +1,6 @@
 # API 概览
 
-Cosmo Mail 提供完整的 RESTful API，基础路径为 `/api/v1`。
+NovaMail 提供完整的 RESTful API，基础路径为 `/api/v1`。
 
 > 除 `/auth/*` 接口外，所有接口均需在请求头中携带 **JWT Token**：
 >

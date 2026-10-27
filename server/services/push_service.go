@@ -14,7 +14,7 @@ import (
 	"log"
 	"os"
 
-	"cosmomail/models"
+	"novamail/models"
 
 	webpush "github.com/SherClockHolmes/webpush-go"
 
@@ -130,7 +130,7 @@ func (s *PushService) SendNotification(userID uint, title, body string, data any
 
 // SendTest 发送测试推送
 func (s *PushService) SendTest(userID uint) error {
-	s.SendNotification(userID, "Cosmo Mail 测试推送", "这是一条测试通知，如果您收到说明 Web Push 工作正常！", nil)
+	s.SendNotification(userID, "NovaMail 测试推送", "这是一条测试通知，如果您收到说明 Web Push 工作正常！", nil)
 	return nil
 }
 
@@ -226,10 +226,10 @@ func GenerateVAPIDKeyPair() (*ecdsa.PrivateKey, []byte, string, error) {
 
 // GetVAPIDSubject 从环境变量读取 VAPID subject
 func GetVAPIDSubject() string {
-	if subj := os.Getenv("COSMOMAIL_VAPID_SUBJECT"); subj != "" {
+	if subj := os.Getenv("NOVAMAIL_VAPID_SUBJECT"); subj != "" {
 		return subj
 	}
-	return "mailto:noreply@cosmomail.local"
+	return "mailto:noreply@novamail.local"
 }
 
 // containsStr 检查字符串是否包含子串

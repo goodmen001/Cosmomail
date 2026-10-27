@@ -6,7 +6,7 @@ package middleware
 import (
 	"strings"
 
-	"cosmomail/services"
+	"novamail/services"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"

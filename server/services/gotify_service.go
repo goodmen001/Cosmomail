@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"cosmomail/models"
+	"novamail/models"
 
 	"gorm.io/gorm"
 )
@@ -79,7 +79,7 @@ func (s *GotifyService) SaveConfig(userID uint, cfg models.GotifyConfig) error {
 
 // Test 发送测试消息，返回错误信息（nil 表示成功）
 func (s *GotifyService) Test(cfg models.GotifyConfig) error {
-	return s.send(cfg, "Cosmo Mail 测试通知", "如果你看到这条消息，说明 Gotify 配置成功 🎉", 5)
+	return s.send(cfg, "NovaMail 测试通知", "如果你看到这条消息，说明 Gotify 配置成功 🎉", 5)
 }
 
 // NotifyMailReceived 新邮件到达时推送（供 Worker 调用；配置无效或未启用时静默跳过）

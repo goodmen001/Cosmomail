@@ -33,7 +33,7 @@ jobs:
       - run: pnpm --dir docs install --frozen-lockfile
       - run: pnpm --dir docs build
         env:
-          VITEPRESS_BASE: /Cosmomail/
+          VITEPRESS_BASE: /NovaMail/
       - uses: actions/configure-pages@v5
         with:
           enablement: true
