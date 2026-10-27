@@ -15,7 +15,8 @@ import (
 func CORS() fiber.Handler {
 	allowedOrigins := os.Getenv("COSMOMAIL_CORS_ORIGINS")
 	if allowedOrigins == "" {
-		allowedOrigins = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173" // Vite 默认端口
+		// Vite 默认端口 + Capacitor 手机 App WebView 来源（http://localhost，iOS 为 capacitor://localhost）
+		allowedOrigins = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://localhost,https://localhost,capacitor://localhost,ionic://localhost"
 	}
 
 	return cors.New(cors.Config{
