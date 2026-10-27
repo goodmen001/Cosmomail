@@ -251,6 +251,24 @@
                   </p>
                 </div>
                 <!-- 删除时同步到源服务器 -->
+                <!-- CardDAV 通讯录同步 -->
+                <div class="form-group" v-if="form.protocol === 'imap'">
+                  <div class="proxy-toggle-row">
+                    <label class="form-label">CardDAV 通讯录同步</label>
+                    <label class="toggle-switch">
+                      <input type="checkbox" v-model="form.carddav_enabled" />
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                  <template v-if="form.carddav_enabled">
+                    <input v-model="form.carddav_url" type="url" class="form-input" placeholder="CardDAV 地址簿 URL，如 https://dav.example.com/user/contacts/" style="margin-top:8px" />
+                    <input v-model="form.carddav_username" type="text" class="form-input" placeholder="CardDAV 用户名（默认同邮箱）" style="margin-top:8px" />
+                    <input v-model="form.carddav_password" type="password" class="form-input" :placeholder="isEdit ? 'CardDAV 密码（留空保持不变）' : 'CardDAV 密码'" style="margin-top:8px" />
+                  </template>
+                  <p class="form-hint text-muted smtp-tip">
+                    从该账号配置的 CardDAV 服务器（RFC 6352）同步联系人到本地通讯录，供写信时选择
+                  </p>
+                </div>
                 <div class="form-group">
                   <div class="proxy-toggle-row">
                     <label class="form-label">删除时同步到源服务器</label>
@@ -426,7 +444,11 @@ const form = reactive({
   sync_mode: 'unread',
   sync_days: 30,
   delete_after_download: false,
-  delete_on_server: false
+  delete_on_server: false,
+  carddav_enabled: false,
+  carddav_url: '',
+  carddav_username: '',
+  carddav_password: ''
 })
 
 // 初始化表单数据
@@ -447,7 +469,11 @@ onMounted(() => {
       sync_mode: props.account.sync_mode || 'unread',
       sync_days: props.account.sync_days || 30,
       delete_after_download: props.account.delete_after_download || false,
-      delete_on_server: props.account.delete_on_server || false
+      delete_on_server: props.account.delete_on_server || false,
+      carddav_enabled: props.account.carddav_enabled || false,
+      carddav_url: props.account.carddav_url || '',
+      carddav_username: props.account.carddav_username || '',
+      carddav_password: ''
     })
     smtpOpen.value = !!(props.account.smtp_host || props.account.smtp_port)
     proxyOpen.value = !!props.account.proxy_enabled
@@ -484,6 +510,12 @@ async function handleSubmit() {
     const submitData = { ...form }
     if (!submitData.username && submitData.email) {
       submitData.username = submitData.email
+    }
+    // CardDAV 密码留空且未启用时清空提交，避免覆盖
+    if (!submitData.carddav_password) delete submitData.carddav_password
+    if (!submitData.carddav_enabled) {
+      delete submitData.carddav_url
+      delete submitData.carddav_username
     }
 
     if (isEdit.value) {

@@ -43,6 +43,10 @@ type MailAccount struct {
 	SyncMode        string     `json:"sync_mode" gorm:"type:varchar(20);default:'unread';comment:同步模式(unread/all/recent)"`
 	SyncDays        int        `json:"sync_days" gorm:"default:30;comment:同步最近天数(仅sync_mode=recent时有效)"`
 	DeleteAfterDownload bool   `json:"delete_after_download" gorm:"default:false;comment:同步成功且确认本地已存正文和附件后删除远程服务器上的邮件"`
+	CardDAVEnabled  bool       `json:"carddav_enabled" gorm:"default:false;comment:是否启用CardDAV通讯录同步"`
+	CardDAVURL      string     `json:"carddav_url,omitempty" gorm:"type:varchar(512);comment:CardDAV地址簿集合URL"`
+	CardDAVUsername string     `json:"carddav_username,omitempty" gorm:"type:varchar(255);comment:CardDAV用户名"`
+	CardDAVPassword string     `json:"carddav_password,omitempty" gorm:"type:text;comment:CardDAV密码"`
 	DeleteOnServer  bool       `json:"delete_on_server" gorm:"default:false;comment:删除时是否同步删除源服务器上的邮件"`
 	LastSyncAt      *time.Time `json:"last_sync_at" gorm:"comment:最后同步时间"`
 	Status          string     `json:"status" gorm:"type:varchar(20);default:'active';index;comment:状态(active/error/disabled)"`
@@ -248,6 +252,10 @@ type AccountRequest struct {
 	SyncMode       string `json:"sync_mode" validate:"omitempty,oneof=unread all recent"` // 同步模式
 	SyncDays       int    `json:"sync_days" validate:"omitempty,min=1,max=365"`           // 最近天数
 	DeleteAfterDownload bool `json:"delete_after_download"`                          // 同步到本地后删除远程邮件(仅IMAP)
+	CardDAVEnabled  bool   `json:"carddav_enabled"`            // 启用CardDAV通讯录同步
+	CardDAVURL      string `json:"carddav_url"`                // CardDAV地址簿URL
+	CardDAVUsername string `json:"carddav_username"`           // CardDAV用户名
+	CardDAVPassword string `json:"carddav_password,omitempty"` // CardDAV密码(提交时)
 	DeleteOnServer bool  `json:"delete_on_server"`                                      // 删除时同步到源服务器
 }
 
@@ -271,6 +279,9 @@ type AccountResponse struct {
 	SyncMode       string      `json:"sync_mode"`            // 同步模式
 	SyncDays       int         `json:"sync_days"`            // 最近天数
 	DeleteAfterDownload bool   `json:"delete_after_download"` // 同步到本地后删除远程邮件
+	CardDAVEnabled  bool   `json:"carddav_enabled"`      // 启用CardDAV通讯录同步
+	CardDAVURL      string `json:"carddav_url,omitempty"` // CardDAV地址簿URL
+	CardDAVUsername string `json:"carddav_username,omitempty"` // CardDAV用户名
 	DeleteOnServer bool        `json:"delete_on_server"`     // 删除时同步到源服务器
 	LastSyncAt     *time.Time  `json:"last_sync_at"`
 	Status         string      `json:"status"`
@@ -302,6 +313,9 @@ type AccountListDTO struct {
 	SyncMode       string     `gorm:"column:sync_mode" json:"sync_mode"`
 	SyncDays       int        `gorm:"column:sync_days" json:"sync_days"`
 	DeleteAfterDownload bool   `gorm:"column:delete_after_download" json:"delete_after_download"`
+	CardDAVEnabled  bool       `gorm:"column:carddav_enabled" json:"carddav_enabled"`
+	CardDAVURL      string     `gorm:"column:carddav_url" json:"carddav_url,omitempty"`
+	CardDAVUsername string     `gorm:"column:carddav_username" json:"carddav_username,omitempty"`
 	DeleteOnServer bool        `gorm:"column:delete_on_server" json:"delete_on_server"`
 	LastSyncAt     *time.Time  `gorm:"column:last_sync_at" json:"last_sync_at"`
 	Status         string      `gorm:"column:status" json:"status"`

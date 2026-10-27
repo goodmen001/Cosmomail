@@ -27,7 +27,12 @@
 
     <!-- 收件人 -->
     <div class="form-section">
-      <label class="form-label">收件人</label>
+      <label class="form-label">收件人
+        <label class="contact-scope-toggle">
+          <input type="checkbox" v-model="allAccountContacts" @change="loadContacts" />
+          包含所有邮箱账号的联系人
+        </label>
+      </label>
       <div class="input-group contact-input-wrap">
         <input
           v-model="toInput"
@@ -185,7 +190,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onActivated, defineOptions } from 'vue'
+import { ref, computed, onMounted, onActivated, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAccountStore } from '@/stores/accountStore'
 import { useToast } from '@/composables/useToast'
@@ -224,9 +229,16 @@ const bccInput = ref('')
 const contacts = ref([])
 const contactSuggestions = ref([])
 
+// 联系人范围：默认当前发送账号的通讯录，可切换为所有账号
+const allAccountContacts = ref(false)
+
 async function loadContacts() {
   try {
-    const res = await getContacts({ limit: 200 })
+    const params = { limit: 200 }
+    if (!allAccountContacts.value && form.value.account_id) {
+      params.account_id = form.value.account_id
+    }
+    const res = await getContacts(params)
     contacts.value = res.contacts || []
   } catch (e) {
     // 联系人加载失败不影响写信
@@ -409,6 +421,11 @@ function insertLink() {
     form.value.html_body += `<a href="${url}">${url}</a>`
   }
 }
+
+// 切换发送账号 → 默认加载该账号通讯录
+watch(() => form.value.account_id, () => {
+  if (!allAccountContacts.value) loadContacts()
+})
 
 onMounted(async () => {
   await accountStore.fetchAccounts()
@@ -693,6 +710,7 @@ onActivated(() => {
 }
 
 .contact-input-wrap { position: relative; }
+.contact-scope-toggle { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; font-size: 12px; font-weight: normal; color: var(--text-secondary, #888); cursor: pointer; }
 
 .contact-dropdown {
   position: absolute;

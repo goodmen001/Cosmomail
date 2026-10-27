@@ -15,6 +15,7 @@ import (
 
 	"cosmomail/config"
 	"cosmomail/models"
+	"cosmomail/contacts"
 	"cosmomail/storage"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -40,13 +41,16 @@ type Fetcher struct {
 	DeletedRemoteUIDs   []uint32 // 本次已标记删除的远程 UID（用于日志与统计）
 	// SkippedDeleteUIDs 因本地存储不完整而拒绝删除的 UID（正文缺失/懒加载附件未缓存）
 	SkippedDeleteUIDs []uint32
+
+	contactsSync *contacts.SyncService // 邮件联系人提取（账号通讯录）
 }
 
 // NewFetcher 创建拉取器实例
 func NewFetcher(db *gorm.DB, cfg *config.Config) *Fetcher {
 	return &Fetcher{
-		db:     db,
-		config: cfg,
+		db:           db,
+		config:       cfg,
+		contactsSync: contacts.NewSyncService(db),
 	}
 }
 
@@ -197,6 +201,9 @@ func (f *Fetcher) syncMailbox(client *IMAPClient, mailboxName, folder string) (i
 		f.SyncedMailIDs = append(f.SyncedMailIDs, parsed.ID)
 		log.Printf("✅ [%s] 入库邮件 ID=%d, UID=%d, subject=%q", f.folder, parsed.ID, buf.UID, parsed.Subject)
 
+		// ⭐ 提取联系人到该账号的通讯录（发件人 + 收件人 + 抄送）
+		f.extractContacts(parsed, buf)
+
 		// ⭐ 下载后删除远程邮件：仅当本地已完整保存（正文或 HTML 至少其一非空，
 		// 且所有附件要么内容在库、要么已缓存到磁盘、要么体积未知时允许懒加载）才打 \Deleted。
 		if f.DeleteAfterDownload && f.folder == "inbox" {
@@ -257,6 +264,22 @@ func (f *Fetcher) resetMailbox(accountID uint, folder string) error {
 		}
 		return tx.Where("account_id = ? AND folder = ?", accountID, folder).Delete(&models.MailboxSyncState{}).Error
 	})
+}
+
+// extractContacts 将一封新入库邮件中的地址提取进该账号的通讯录。
+// 邮件模型不含 UserID，这里从账号表补齐；失败仅记日志，不影响同步。
+func (f *Fetcher) extractContacts(mailObj *models.Mail, buf *imapclient.FetchMessageBuffer) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("⚠️ 提取联系人异常 (mail_id=%d): %v", mailObj.ID, r)
+		}
+	}()
+	var acct models.MailAccount
+	if err := f.db.Select("id", "user_id", "email").First(&acct, mailObj.AccountID).Error; err != nil {
+		return
+	}
+	go f.contactsSync.ExtractFromMail(acct.UserID, acct.ID, acct.Email, mailObj.From, mailObj.To, mailObj.Cc, mailObj.SentAt)
+	_ = buf
 }
 
 // locallyComplete 校验一封邮件是否已完整保存到本地：

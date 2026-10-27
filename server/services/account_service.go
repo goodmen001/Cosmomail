@@ -102,6 +102,10 @@ func (s *AccountService) Create(userID uint, req models.AccountRequest) (*models
 		SyncMode:       req.SyncMode,
 		SyncDays:       req.SyncDays,
 		DeleteAfterDownload: req.DeleteAfterDownload,
+		CardDAVEnabled:      req.CardDAVEnabled,
+		CardDAVURL:          req.CardDAVURL,
+		CardDAVUsername:     req.CardDAVUsername,
+		CardDAVPassword:     req.CardDAVPassword,
 		DeleteOnServer: req.DeleteOnServer,
 		Status:         "active",
 	}
@@ -145,7 +149,15 @@ func (s *AccountService) Update(userID, id uint, req models.AccountRequest) (*mo
 		"sync_mode":        req.SyncMode,
 		"sync_days":        req.SyncDays,
 		"delete_after_download": req.DeleteAfterDownload,
+		"carddav_enabled":       req.CardDAVEnabled,
+		"carddav_url":           req.CardDAVURL,
+		"carddav_username":      req.CardDAVUsername,
 		"delete_on_server": req.DeleteOnServer,
+	}
+
+	// 仅在填写了 CardDAV 密码时更新，避免编辑其他项时覆盖已有密码
+	if req.CardDAVPassword != "" {
+		updates["carddav_password"] = req.CardDAVPassword
 	}
 
 	// 仅在请求中携带了 SMTP 配置时更新，避免未填写时覆盖丢失已有发件配置
@@ -319,6 +331,9 @@ func (s *AccountService) dtoToResponse(dto models.AccountListDTO) models.Account
 		SyncMode:       dto.SyncMode,
 		SyncDays:       dto.SyncDays,
 		DeleteAfterDownload: dto.DeleteAfterDownload,
+		CardDAVEnabled:      dto.CardDAVEnabled,
+		CardDAVURL:          dto.CardDAVURL,
+		CardDAVUsername:     dto.CardDAVUsername,
 		DeleteOnServer: dto.DeleteOnServer,
 		LastSyncAt:     dto.LastSyncAt,
 		Status:         dto.Status,
@@ -350,6 +365,9 @@ func (s *AccountService) toResponse(account models.MailAccount) models.AccountRe
 		SyncMode:       account.SyncMode,
 		SyncDays:       account.SyncDays,
 		DeleteAfterDownload: account.DeleteAfterDownload,
+		CardDAVEnabled:      account.CardDAVEnabled,
+		CardDAVURL:          account.CardDAVURL,
+		CardDAVUsername:     account.CardDAVUsername,
 		DeleteOnServer: account.DeleteOnServer,
 		LastSyncAt:     account.LastSyncAt,
 		Status:         account.Status,

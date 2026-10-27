@@ -1,6 +1,6 @@
 {
   "name": "cosmomail",
-  "version": "1.3.0",
+  "version": "1.4.5",
   "private": true,
   "packageManager": "pnpm@10.34.1",
   "type": "module",

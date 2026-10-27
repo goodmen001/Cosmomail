@@ -7,3 +7,13 @@ import request from './request'
 export function getContacts(params = {}) {
   return request.get('/contacts', { params })
 }
+
+/** 手动全量提取指定账号已同步邮件中的联系人 */
+export function syncAccountContacts(accountId) {
+  return request.post('/contacts/sync', null, { params: { account_id: accountId } })
+}
+
+/** 从指定账号的 CardDAV 服务器同步联系人 */
+export function syncCardDAVContacts(accountId) {
+  return request.post('/contacts/carddav/sync', null, { params: { account_id: accountId } })
+}

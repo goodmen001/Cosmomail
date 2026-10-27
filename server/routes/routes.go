@@ -132,6 +132,8 @@ func Register(app *fiber.App, db *gorm.DB) {
 	// ============================================================
 	contacts := protected.Group("/contacts")
 	contacts.Get("", contactHandler.List)
+	contacts.Post("/sync", contactHandler.Sync)
+	contacts.Post("/carddav/sync", contactHandler.SyncCardDAV)
 
 	// ============================================================
 	//  OAuth2 授权 API（设备码流）

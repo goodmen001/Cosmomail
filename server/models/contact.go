@@ -8,15 +8,16 @@ import (
 	"time"
 )
 
-// Contact 联系人（收件人）记录 —— 仅记录通过本应用发出的收件地址并去重
+// Contact 联系人（收件人）记录 —— 记录发信收件人与邮件同步提取的联系人并去重
 type Contact struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
 	UserID    uint      `json:"user_id" gorm:"index;not null;comment:所属用户ID"`
 	Email     string    `json:"email" gorm:"type:varchar(255);not null;uniqueIndex:idx_contact_user_email;comment:联系人邮箱"`
 	Name      string    `json:"name" gorm:"type:varchar(100);comment:联系人名称(如有)"`
-	AccountID uint      `json:"account_id" gorm:"index;default:0;comment:首次发信使用的邮箱账号ID"`
-	LastUsedAt time.Time `json:"last_used_at" gorm:"comment:最近一次发信时间"`
-	UseCount  int64     `json:"use_count" gorm:"default:1;comment:发信次数"`
+	AccountID uint      `json:"account_id" gorm:"index;default:0;comment:关联的邮箱账号ID(发信账号或提取来源账号)"`
+	LastUsedAt time.Time `json:"last_used_at" gorm:"comment:最近一次出现时间"`
+	UseCount  int64     `json:"use_count" gorm:"default:1;comment:出现次数"`
+	Source    string    `json:"source" gorm:"type:varchar(20);default:'send';comment:来源(send=发信记录/sync=邮件同步提取/carddav=通讯录同步)"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

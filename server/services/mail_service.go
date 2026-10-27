@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"cosmomail/config"
+	"cosmomail/contacts"
 	"cosmomail/imap"
 	"cosmomail/models"
 	pop3pkg "cosmomail/pop3"
@@ -586,18 +587,49 @@ func (s *MailService) recordContacts(ownerID, accountID uint, emails []string) {
 }
 
 // ListContacts 获取当前用户的联系人列表（按最近使用排序）
-func (s *MailService) ListContacts(ownerID uint, keyword string, limit int) ([]models.Contact, error) {
-	if limit <= 0 || limit > 200 {
-		limit = 50
+// accountID > 0 时只返回该邮箱账号的通讯录；keyword 同时匹配邮箱和姓名
+func (s *MailService) ListContacts(ownerID, accountID uint, keyword string, limit int) ([]models.Contact, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 200
 	}
 	query := s.db.Where("user_id = ?", ownerID)
+	if accountID > 0 {
+		query = query.Where("account_id = ?", accountID)
+	}
 	if keyword != "" {
 		kw := "%" + models.NormalizeEmail(keyword) + "%"
-		query = query.Where("email LIKE ?", kw)
+		query = query.Where("(email LIKE ? OR name LIKE ?)", kw, kw)
 	}
 	var contacts []models.Contact
 	err := query.Order("last_used_at DESC").Limit(limit).Find(&contacts).Error
 	return contacts, err
+}
+
+// SyncAccountContacts 全量提取指定账号已同步邮件中的联系人
+func (s *MailService) SyncAccountContacts(ownerID, accountID uint) (int64, error) {
+	var acct models.MailAccount
+	if err := s.db.Where("id = ? AND user_id = ?", accountID, ownerID).First(&acct).Error; err != nil {
+		return 0, err
+	}
+	return contacts.NewSyncService(s.db).SyncAccountContacts(ownerID, accountID, acct.Email)
+}
+
+// SyncAccountCardDAV 从指定账号配置的 CardDAV 服务器同步联系人
+func (s *MailService) SyncAccountCardDAV(ownerID, accountID uint) (int, error) {
+	var acct models.MailAccount
+	if err := s.db.Where("id = ? AND user_id = ?", accountID, ownerID).First(&acct).Error; err != nil {
+		return 0, err
+	}
+	if !acct.CardDAVEnabled || acct.CardDAVURL == "" {
+		return 0, fmt.Errorf("该账号未启用 CardDAV 或未配置地址簿 URL")
+	}
+	cfg := contacts.CardDAVConfig{
+		Enabled:  acct.CardDAVEnabled,
+		URL:      acct.CardDAVURL,
+		Username: acct.CardDAVUsername,
+		Password: acct.CardDAVPassword,
+	}
+	return contacts.NewSyncService(s.db).SyncCardDAV(ownerID, accountID, cfg)
 }
 
 // SaveSentMail 保存已发送邮件到数据库

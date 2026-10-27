@@ -112,6 +112,41 @@
         </transition>
       </router-link>
 
+      <!-- 通讯录（按邮箱账号） -->
+      <div class="addr-section" v-show="!collapsed">
+        <button class="nav-item addr-toggle" @click="showAddrBook = !showAddrBook">
+          <span class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="3" y="2.5" width="11" height="15" rx="2" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M14 6h2a1 1 0 011 1v8a1 1 0 01-1 1h-2" stroke="currentColor" stroke-width="1.6"/>
+              <circle cx="8.5" cy="8" r="1.8" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M5.8 13.2c.5-1.3 2.9-1.3 3.4 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="nav-label">通讯录</span>
+          <span class="toggle-icon">{{ showAddrBook ? '▾' : '▸' }}</span>
+        </button>
+        <div v-if="showAddrBook" class="addr-book">
+          <div v-for="acc in accountStore.accounts" :key="acc.id" class="addr-group">
+            <div class="addr-group-title" @click="toggleGroup(acc.id)">
+              {{ acc.name || acc.email }}
+              <span class="toggle-icon">{{ expandedGroup === acc.id ? '▾' : '▸' }}</span>
+            </div>
+            <div v-if="expandedGroup === acc.id" class="addr-list">
+              <div v-if="addrLoading" class="addr-empty">加载中…</div>
+              <div v-else-if="!accountContacts.length" class="addr-empty">暂无联系人</div>
+              <button
+                v-for="ct in accountContacts"
+                :key="ct.id"
+                class="addr-item"
+                :title="'点击复制 ' + ct.email"
+                @click="copyEmail(ct.email)"
+              >{{ ct.name ? ct.name + ' · ' : '' }}{{ ct.email }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 分割线 -->
       <div class="nav-divider"></div>
 
@@ -162,6 +197,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAccountStore } from '@/stores/accountStore'
 import { useMailStore } from '@/stores/mailStore'
+import { getContacts } from '@/api/contact'
 
 const props = defineProps({
   collapsed: Boolean,
@@ -196,6 +232,44 @@ function handleNavClick(path) {
     mobileOpen.value = false
   }
 }
+
+// ---- 通讯录（按账号展开，点击复制） ----
+const showAddrBook = ref(false)
+const expandedGroup = ref(null)
+const accountContacts = ref([])
+const addrLoading = ref(false)
+
+function toggleGroup(accountId) {
+  if (expandedGroup.value === accountId) {
+    expandedGroup.value = null
+    return
+  }
+  expandedGroup.value = accountId
+  loadAccountContacts(accountId)
+}
+
+async function loadAccountContacts(accountId) {
+  addrLoading.value = true
+  try {
+    const res = await getContacts({ account_id: accountId, limit: 100 })
+    accountContacts.value = res.contacts || []
+  } catch (e) {
+    accountContacts.value = []
+  } finally {
+    addrLoading.value = false
+  }
+}
+
+async function copyEmail(email) {
+  try {
+    await navigator.clipboard.writeText(email)
+    copiedTip.value = email
+    setTimeout(() => { copiedTip.value = '' }, 1500)
+  } catch (e) {
+    // 剪贴板不可用时静默失败
+  }
+}
+const copiedTip = ref('')
 
 onMounted(() => {
   // 仅当无缓存数据时加载账号
@@ -384,6 +458,25 @@ onUnmounted(() => {
   background: var(--border-light);
   margin: 8px 8px 12px;
 }
+
+/* ---- 通讯录 ---- */
+.addr-toggle .toggle-icon { font-size: 11px; color: var(--text-tertiary); }
+.addr-book { padding: 0 4px 4px 22px; }
+.addr-group-title {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; color: var(--text-tertiary);
+  padding: 6px 8px; border-radius: var(--radius-sm, 6px); cursor: pointer;
+}
+.addr-group-title:hover { background: var(--bg-hover); color: var(--text-primary); }
+.addr-list { display: flex; flex-direction: column; padding-left: 6px; }
+.addr-item {
+  text-align: left; background: none; border: none; cursor: copy;
+  font-size: 12px; color: var(--text-secondary); font-family: inherit;
+  padding: 4px 8px; border-radius: var(--radius-sm, 6px);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.addr-item:hover { background: var(--bg-hover); color: var(--primary-500); }
+.addr-empty { font-size: 12px; color: var(--text-tertiary); padding: 4px 8px; }
 
 /* ---- 底部状态 ---- */
 .footer-status {
