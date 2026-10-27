@@ -21,11 +21,13 @@ RUN if command -v pnpm >/dev/null 2>&1; then pnpm build; else npm run build; fi
 FROM golang:1.25-alpine AS backend
 WORKDIR /build
 
+# 嵌入前端产物（vite outDir=../server/dist，在前端阶段实际落盘 /server/dist）
+COPY --from=frontend /server/dist/ ./embedfs/dist/
+
 COPY server/go.mod server/go.sum ./
 RUN go mod download
 
-# 嵌入前端产物（vite outDir 为 ../server/dist，从前端阶段复制）
-COPY --from=frontend /build/server/dist/ ./embedfs/dist/
+COPY server/ ./
 
 ARG APP_VERSION=dev
 RUN CGO_ENABLED=0 GOOS=linux \
