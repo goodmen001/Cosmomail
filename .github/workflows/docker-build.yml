@@ -8,6 +8,12 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+# 同一次 push 若同时含 main 提交与 v* 标签，branches 与 tags 两个条件
+# 会各自触发一次本工作流；按 ref 分组并取消旧运行，避免重复构建。
+concurrency:
+  group: docker-build-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
