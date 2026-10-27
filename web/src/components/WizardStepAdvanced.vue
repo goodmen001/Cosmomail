@@ -40,6 +40,14 @@
             <span class="unit">天</span>
           </div>
         </div>
+        <div class="form-group toggle-row" v-if="form.protocol === 'imap'">
+          <label class="form-label">下载后删除远程邮件</label>
+          <label class="toggle-switch">
+            <input type="checkbox" v-model="form.delete_after_download" />
+            <span class="toggle-slider"></span>
+          </label>
+          <small class="form-hint">邮件同步到本地后自动删除邮箱服务器上的原邮件，为小容量邮箱腾出空间</small>
+        </div>
         <div class="form-group toggle-row">
           <label class="form-label">删除时同步删除源服务器邮件</label>
           <label class="toggle-switch">

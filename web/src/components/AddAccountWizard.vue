@@ -84,6 +84,7 @@ const formData = reactive({
   proxy_enabled: false,
   proxy_url: '',
   sync_mode: 'unread',
+  delete_after_download: false,
   sync_days: 30,
   delete_on_server: false
 })

@@ -341,12 +341,14 @@ func (w *AccountWorker) syncOnce() {
 		// INBOX is latency-sensitive: notify the UI before the lower-priority Sent sync.
 		imapClient := client.(*IMAPClient)
 		fetcher := NewFetcher(w.db, w.config)
+		fetcher.DeleteAfterDownload = w.account.DeleteAfterDownload
 		count, err = fetcher.SyncMailbox(imapClient)
 		if err == nil {
 			if count > 0 {
 				w.notifyNewMails(count, fetcher.SyncedMailIDs)
 			}
 			// 继续同步已发送文件夹（失败不阻止主流程）
+			// 注意：已发送文件夹不做"下载后删除"，只对 INBOX 生效
 			sentFetcher := NewFetcher(w.db, w.config)
 			if sentCount, sentErr := sentFetcher.SyncSentMailbox(imapClient); sentErr == nil {
 				count += sentCount

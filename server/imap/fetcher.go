@@ -34,6 +34,12 @@ type Fetcher struct {
 	config        *config.Config
 	folder        string // 当前同步的文件夹名（inbox/sent）
 	SyncedMailIDs []uint // 本次同步成功入库的邮件ID列表（精确追踪，用于webhook）
+	// DeleteAfterDownload 为 true 时，对本次成功下载（正文/附件已确认落本地）的邮件
+	// 在远程服务器上打 \Deleted 标记；由调用方在同步结束后统一 Expunge。
+	DeleteAfterDownload bool
+	DeletedRemoteUIDs   []uint32 // 本次已标记删除的远程 UID（用于日志与统计）
+	// SkippedDeleteUIDs 因本地存储不完整而拒绝删除的 UID（正文缺失/懒加载附件未缓存）
+	SkippedDeleteUIDs []uint32
 }
 
 // NewFetcher 创建拉取器实例
@@ -191,6 +197,22 @@ func (f *Fetcher) syncMailbox(client *IMAPClient, mailboxName, folder string) (i
 		f.SyncedMailIDs = append(f.SyncedMailIDs, parsed.ID)
 		log.Printf("✅ [%s] 入库邮件 ID=%d, UID=%d, subject=%q", f.folder, parsed.ID, buf.UID, parsed.Subject)
 
+		// ⭐ 下载后删除远程邮件：仅当本地已完整保存（正文或 HTML 至少其一非空，
+		// 且所有附件要么内容在库、要么已缓存到磁盘、要么体积未知时允许懒加载）才打 \Deleted。
+		if f.DeleteAfterDownload && f.folder == "inbox" {
+			if f.locallyComplete(parsed.ID) {
+				if err := client.DeleteMessage(uint32(buf.UID)); err != nil {
+					log.Printf("⚠️  [%s] 本地已保存但删除远程邮件失败 (UID=%d): %v，邮件保留在服务器，下轮重试", f.folder, buf.UID, err)
+					f.SkippedDeleteUIDs = append(f.SkippedDeleteUIDs, uint32(buf.UID))
+				} else {
+					f.DeletedRemoteUIDs = append(f.DeletedRemoteUIDs, uint32(buf.UID))
+				}
+			} else {
+				log.Printf("⚠️  [%s] 本地存储不完整，跳过删除远程邮件 (UID=%d)", f.folder, buf.UID)
+				f.SkippedDeleteUIDs = append(f.SkippedDeleteUIDs, uint32(buf.UID))
+			}
+		}
+
 		// 邮件和附件已在 parseMessage 中统一入库，无需额外操作
 		newCount++
 		if processed >= batchSize {
@@ -235,6 +257,36 @@ func (f *Fetcher) resetMailbox(accountID uint, folder string) error {
 		}
 		return tx.Where("account_id = ? AND folder = ?", accountID, folder).Delete(&models.MailboxSyncState{}).Error
 	})
+}
+
+// locallyComplete 校验一封邮件是否已完整保存到本地：
+// 正文（纯文本或 HTML）至少其一非空，且附件无"需要远程服务器才能查看"的缺口。
+// 返回 false 时调用方不得删除远程邮件，避免本地数据不完整导致邮件内容永久丢失。
+func (f *Fetcher) locallyComplete(mailID uint) bool {
+	var m models.Mail
+	if err := f.db.Select("text_body", "html_body", "has_attachment").First(&m, mailID).Error; err != nil {
+		return false
+	}
+	if !m.TextBody.Valid && !m.HTMLBody.Valid {
+		return false
+	}
+	if !m.HasAttachment {
+		return true
+	}
+	var atts []models.Attachment
+	if err := f.db.Where("mail_id = ?", mailID).Find(&atts).Error; err != nil {
+		return false
+	}
+	for _, att := range atts {
+		// 未知大小（-1）的懒加载附件无法确认能否离线查看，为安全起见不删远程
+		if !att.IsCached && att.Size != 0 && att.Size != -1 {
+			return false
+		}
+		if att.IsCached && att.Size <= 0 && att.Content == nil && att.FilePath == "" {
+			return false
+		}
+	}
+	return true
 }
 
 // parseMessage 解析单封邮件，返回解析后的 Mail 对象；若已存在则返回 nil（去重）

@@ -237,6 +237,19 @@
                 <p v-if="form.protocol !== 'imap' && form.sync_mode === 'unread'" class="form-hint text-warning smtp-tip">
                   ⚠️ POP3 协议不支持区分已读/未读状态，将自动降级为同步全部邮件（通过 Message-ID 去重避免重复）
                 </p>
+                <!-- 下载后删除远程邮件（小容量邮箱释放服务器空间） -->
+                <div class="form-group" v-if="form.protocol === 'imap'">
+                  <div class="proxy-toggle-row">
+                    <label class="form-label">下载后删除远程邮件</label>
+                    <label class="toggle-switch">
+                      <input type="checkbox" v-model="form.delete_after_download" />
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                  <p class="form-hint text-muted smtp-tip">
+                    适合小容量邮箱：邮件同步到本应用服务器后（确认正文和附件已保存完整），自动删除邮箱服务器上的原邮件，为本服务器腾出空间。⚠️ 开启后邮箱服务器上只保留尚未同步的新邮件
+                  </p>
+                </div>
                 <!-- 删除时同步到源服务器 -->
                 <div class="form-group">
                   <div class="proxy-toggle-row">
@@ -412,6 +425,7 @@ const form = reactive({
   proxy_url: '',
   sync_mode: 'unread',
   sync_days: 30,
+  delete_after_download: false,
   delete_on_server: false
 })
 
@@ -432,6 +446,7 @@ onMounted(() => {
       proxy_url: props.account.proxy_url || '',
       sync_mode: props.account.sync_mode || 'unread',
       sync_days: props.account.sync_days || 30,
+      delete_after_download: props.account.delete_after_download || false,
       delete_on_server: props.account.delete_on_server || false
     })
     smtpOpen.value = !!(props.account.smtp_host || props.account.smtp_port)

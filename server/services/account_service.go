@@ -49,7 +49,7 @@ func (s *AccountService) List(userID uint, page, pageSize int) ([]models.Account
 		"password", // 仅检查是否为空，不解密
 		"auth_type", "oauth_provider", "token_expires_at",
 		"proxy_enabled", "proxy_url", "sync_mode", "sync_days",
-		"delete_on_server", "last_sync_at", "status", "error_msg",
+		"delete_on_server", "delete_after_download", "last_sync_at", "status", "error_msg",
 		"created_at", "updated_at",
 	}
 
@@ -101,6 +101,7 @@ func (s *AccountService) Create(userID uint, req models.AccountRequest) (*models
 		ProxyURL:       req.ProxyURL,
 		SyncMode:       req.SyncMode,
 		SyncDays:       req.SyncDays,
+		DeleteAfterDownload: req.DeleteAfterDownload,
 		DeleteOnServer: req.DeleteOnServer,
 		Status:         "active",
 	}
@@ -143,6 +144,7 @@ func (s *AccountService) Update(userID, id uint, req models.AccountRequest) (*mo
 		"proxy_url":        req.ProxyURL,
 		"sync_mode":        req.SyncMode,
 		"sync_days":        req.SyncDays,
+		"delete_after_download": req.DeleteAfterDownload,
 		"delete_on_server": req.DeleteOnServer,
 	}
 
@@ -316,6 +318,7 @@ func (s *AccountService) dtoToResponse(dto models.AccountListDTO) models.Account
 		ProxyURL:       dto.ProxyURL,
 		SyncMode:       dto.SyncMode,
 		SyncDays:       dto.SyncDays,
+		DeleteAfterDownload: dto.DeleteAfterDownload,
 		DeleteOnServer: dto.DeleteOnServer,
 		LastSyncAt:     dto.LastSyncAt,
 		Status:         dto.Status,
@@ -346,6 +349,7 @@ func (s *AccountService) toResponse(account models.MailAccount) models.AccountRe
 		ProxyURL:       account.ProxyURL,
 		SyncMode:       account.SyncMode,
 		SyncDays:       account.SyncDays,
+		DeleteAfterDownload: account.DeleteAfterDownload,
 		DeleteOnServer: account.DeleteOnServer,
 		LastSyncAt:     account.LastSyncAt,
 		Status:         account.Status,
