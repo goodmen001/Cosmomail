@@ -128,23 +128,66 @@
     <!-- 正文编辑器 -->
     <div class="form-section editor-area">
       <div class="editor-toolbar">
-        <button class="toolbar-btn" title="加粗" @click="formatText('bold')"><b>B</b></button>
-        <button class="toolbar-btn" title="斜体" @click="formatText('italic')"><i>I</i></button>
-        <button class="toolbar-btn" title="插入链接" @click="insertLink">🔗</button>
+        <button class="toolbar-btn" title="撤销" @click="execCmd('undo')">↶</button>
+        <button class="toolbar-btn" title="重做" @click="execCmd('redo')">↷</button>
         <span class="toolbar-sep"></span>
-        <label class="editor-mode-toggle">
-          <input type="checkbox" v-model="useHtmlMode" />
-          HTML 模式
+        <button class="toolbar-btn" title="加粗" @mousedown.prevent @click="execCmd('bold')"><b>B</b></button>
+        <button class="toolbar-btn" title="斜体" @mousedown.prevent @click="execCmd('italic')"><i>I</i></button>
+        <button class="toolbar-btn" title="下划线" @mousedown.prevent @click="execCmd('underline')"><u>U</u></button>
+        <button class="toolbar-btn" title="删除线" @mousedown.prevent @click="execCmd('strikeThrough')"><s>S</s></button>
+        <span class="toolbar-sep"></span>
+        <select class="toolbar-select" title="字号" @change="applyFontSize($event)">
+          <option value="" disabled selected>字号</option>
+          <option value="1">极小</option>
+          <option value="2">很小</option>
+          <option value="3">小</option>
+          <option value="4">标准</option>
+          <option value="5">大</option>
+          <option value="6">很大</option>
+          <option value="7">极大</option>
+        </select>
+        <label class="toolbar-btn color-btn" title="文字颜色">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h16"/><path d="m6 16 5-12 5 12M8 12h6"/></svg>
+          <input type="color" hidden @input="execCmd('foreColor', $event.target.value)" />
+        </label>
+        <label class="toolbar-btn color-btn" title="背景色">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 11 4-8 4 8Z"/><path d="M3 21h18M6.5 17 9 11l2.5 6"/></svg>
+          <input type="color" hidden @input="execCmd('hiliteColor', $event.target.value)" />
+        </label>
+        <span class="toolbar-sep"></span>
+        <button class="toolbar-btn" title="左对齐" @mousedown.prevent @click="execCmd('justifyLeft')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h12M3 18h15"/></svg></button>
+        <button class="toolbar-btn" title="居中" @mousedown.prevent @click="execCmd('justifyCenter')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M6 12h12M4 18h16"/></svg></button>
+        <button class="toolbar-btn" title="右对齐" @mousedown.prevent @click="execCmd('justifyRight')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M9 12h12M6 18h15"/></svg></button>
+        <span class="toolbar-sep"></span>
+        <button class="toolbar-btn" title="无序列表" @mousedown.prevent @click="execCmd('insertUnorderedList')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.3" fill="currentColor" stroke="none"/></svg></button>
+        <button class="toolbar-btn" title="有序列表" @mousedown.prevent @click="execCmd('insertOrderedList')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6h11M10 12h11M10 18h11"/><path d="M4 6h1v4M4 10h2" stroke-width="1.5"/></svg></button>
+        <button class="toolbar-btn" title="引用" @mousedown.prevent @click="execCmd('formatBlock', 'blockquote')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6a4 4 0 0 1-4 4"/><path d="M20 11h-4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6a4 4 0 0 1-4 4"/></svg></button>
+        <span class="toolbar-sep"></span>
+        <button class="toolbar-btn" title="插入链接" @mousedown.prevent @click="insertLink">🔗</button>
+        <button class="toolbar-btn" title="插入图片" @mousedown.prevent @click="insertImage">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        </button>
+        <button class="toolbar-btn" title="插入分隔线" @mousedown.prevent @click="execCmd('insertHorizontalRule')">—</button>
+        <span class="toolbar-sep"></span>
+        <button class="toolbar-btn" title="清除格式" @mousedown.prevent @click="execCmd('removeFormat')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7V5h12v2M8 5v14M12 19H4M15 13l6 6M21 13l-6 6"/></svg>
+        </button>
+        <span class="toolbar-sep"></span>
+        <label class="editor-mode-toggle" title="切换为 HTML 源码编辑">
+          <input type="checkbox" :checked="editorMode === 'html'" @change="toggleHtmlMode" />
+          HTML 源码
         </label>
       </div>
-      <textarea
-        v-if="!useHtmlMode"
-        ref="textEditor"
-        v-model="form.body"
-        class="form-textarea editor-text"
-        rows="14"
-        placeholder="请输入邮件正文..."
-      ></textarea>
+      <!-- 富文本可视化编辑 -->
+      <div
+        v-if="editorMode === 'rich'"
+        ref="richEditor"
+        class="form-textarea editor-rich"
+        contenteditable="true"
+        data-placeholder="请输入邮件正文..."
+        @input="syncFromRich"
+      ></div>
+      <!-- HTML 源码编辑 -->
       <textarea
         v-else
         v-model="form.html_body"
@@ -211,7 +254,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onActivated, watch } from 'vue'
+import { ref, computed, onMounted, onActivated, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAccountStore } from '@/stores/accountStore'
 import { useToast } from '@/composables/useToast'
@@ -334,14 +377,14 @@ function onRecipientBlur() {
 }
 
 const showCc = ref(false)
-const useHtmlMode = ref(false)
+// 编辑器模式：rich = 可视化富文本（默认）, html = HTML 源码
+const editorMode = ref('rich')
+const richEditor = ref(null)
 const sending = ref(false)
 const saving = ref(false)
 const sendResult = ref('')
 const sendError = ref(false)
 const editingDraftId = ref(null) // 正在编辑的草稿ID（如果有）
-
-const textEditor = ref(null)
 
 const canSend = computed(() => {
   return form.value.account_id && form.value.to.length > 0 && form.value.subject.trim() !== ''
@@ -405,7 +448,11 @@ async function handleSend() {
 
     if (form.value.cc.length > 0) payload.cc = form.value.cc
     if (form.value.bcc.length > 0) payload.bcc = form.value.bcc
-    if (useHtmlMode.value && form.value.html_body) payload.html_body = form.value.html_body
+    // 富文本/HTML 模式都发送 html_body；纯文本回退 body
+    if (editorMode.value === 'rich') {
+      syncFromRich()
+    }
+    if (form.value.html_body) payload.html_body = form.value.html_body
     if (attachments.value.length > 0) {
       payload.attachments = attachments.value.map(f => ({
         filename: f.name,
@@ -450,7 +497,7 @@ async function handleSaveDraft() {
       bcc: form.value.bcc,
       subject: form.value.subject,
       body: form.value.body || '',
-      html_body: useHtmlMode.value ? form.value.html_body : '',
+      html_body: editorMode.value === 'html' ? form.value.html_body : (form.value.html_body || ''),
     }
 
     // 更新已有草稿时需要传 id 字段让后端走更新逻辑
@@ -477,20 +524,57 @@ async function handleSaveDraft() {
   }
 }
 
-function formatText(command) {
-  // 纯文本模式下提示用户
-  if (!useHtmlMode.value) {
-    toast.warning('请先开启 HTML 模式使用富文本格式')
+// ---- 富文本编辑器 ----
+function applyFontSize(e) {
+  const v = e.target.value
+  e.target.value = '' // 复位，便于重复选择同一字号
+  if (v) execCmd('fontSize', v)
+}
+
+function execCmd(command, value = null) {
+  if (editorMode.value !== 'rich') {
+    toast.warning('请切换回富文本模式使用格式工具')
     return
+  }
+  richEditor.value?.focus()
+  document.execCommand(command, false, value)
+  syncFromRich()
+}
+
+// contenteditable 内容 → form.html_body（同时生成纯文本摘要到 body）
+function syncFromRich() {
+  if (editorMode.value !== 'rich' || !richEditor.value) return
+  form.value.html_body = richEditor.value.innerHTML
+  // 纯文本版本（去掉标签与引言样式）供不支持 HTML 的客户端回显
+  const div = document.createElement('div')
+  div.innerHTML = richEditor.value.innerHTML
+  form.value.body = div.textContent || ''
+}
+
+// HTML 源码 ↔ 富文本切换
+function toggleHtmlMode(e) {
+  if (e.target.checked) {
+    // rich → html：先把当前内容同步到 html_body
+    if (editorMode.value === 'rich') syncFromRich()
+    editorMode.value = 'html'
+  } else {
+    editorMode.value = 'rich'
+    nextTick(() => {
+      if (richEditor.value) {
+        richEditor.value.innerHTML = form.value.html_body || ''
+      }
+    })
   }
 }
 
 function insertLink() {
-  if (!useHtmlMode.value) return
   const url = prompt('请输入链接地址:', 'https://')
-  if (url) {
-    form.value.html_body += `<a href="${url}">${url}</a>`
-  }
+  if (url) execCmd('createLink', url)
+}
+
+function insertImage() {
+  const url = prompt('请输入图片地址（URL）:', 'https://')
+  if (url) execCmd('insertImage', url)
 }
 
 // HTML 转义（用于回复引言中的纯文本原文）
@@ -527,7 +611,10 @@ onMounted(async () => {
         : `<br><br><div class="cosmomail-quote" style="margin:0;padding-left:12px;border-left:3px solid #ddd;color:#666;"><div>${quote.header}</div><blockquote style="margin:8px 0 0;white-space:pre-wrap;">${escapeHtml(quote.textBody || '')}</blockquote></div>`
       form.value.html_body = quoteHtml
       form.value.body = `\n\n${quote.header}\n${(quote.textBody || '').split('\n').map(l => '> ' + l).join('\n')}`
-      useHtmlMode.value = Boolean(quote.htmlBody)
+      editorMode.value = 'rich'
+      nextTick(() => {
+        if (richEditor.value) richEditor.value.innerHTML = form.value.html_body
+      })
     }
   } catch (_) { /* 引用失败不影响回复 */ }
 
@@ -543,8 +630,11 @@ onMounted(async () => {
         form.value.subject = draft.subject || ''
         form.value.body = draft.body || ''
         if (draft.html_body) {
-          useHtmlMode.value = true
           form.value.html_body = draft.html_body || ''
+          editorMode.value = 'rich'
+          nextTick(() => {
+            if (richEditor.value) richEditor.value.innerHTML = form.value.html_body
+          })
         }
       }
     } catch (e) {
@@ -674,6 +764,38 @@ onActivated(() => {
   border-color: var(--primary-500);
   box-shadow: 0 0 0 3px var(--mail-unread-bg);
 }
+
+/* ---- 富文本编辑器 ---- */
+.editor-rich {
+  min-height: 280px;
+  max-height: 520px;
+  overflow-y: auto;
+  cursor: text;
+  line-height: 1.6;
+}
+.editor-rich:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-tertiary, #9ca3af);
+  pointer-events: none;
+}
+.editor-rich blockquote {
+  margin: 8px 0;
+  padding: 4px 12px;
+  border-left: 3px solid var(--border-color, #d1d5db);
+  color: var(--text-secondary, #6b7280);
+}
+.editor-rich img { max-width: 100%; }
+.toolbar-select {
+  padding: 4px 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+.color-btn { position: relative; }
+.color-btn input[type="color"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
 .form-textarea { resize: vertical; line-height: 1.7; }
 
