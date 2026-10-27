@@ -513,6 +513,14 @@ watch(() => appStore.mailPageSize, (newSize) => {
   }
 })
 
+// 顶栏搜索框：全局搜索关键词变化时同步到邮件筛选并刷新列表。
+// （此前搜索词只存了 appStore.searchKeyword，从未传入请求参数，导致搜索无效）
+watch(() => appStore.searchKeyword, (kw) => {
+  if ((mailStore.filters.keyword || '') !== (kw || '')) {
+    mailStore.setFilter('keyword', kw || '')
+  }
+}, { immediate: true })
+
 onMounted(async () => {
   // 初始化每页显示数量（从全局设置）
   mailStore.pageSize = appStore.mailPageSize
