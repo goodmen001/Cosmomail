@@ -1,0 +1,21 @@
+{
+  "appId": "com.goodmen001.cosmomail",
+  "appName": "Cosmo Mail",
+  "webDir": "dist-web",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  },
+  "plugins": {
+    "Badge": {
+      "persist": true,
+      "autoClear": false
+    },
+    "SplashScreen": {
+      "launchShowDuration": 800,
+      "backgroundColor": "#f1f5f9",
+      "androidSplashResourceName": "splash",
+      "showSpinner": false
+    }
+  }
+}

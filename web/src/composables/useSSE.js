@@ -2,6 +2,7 @@
 // Copyright (C) 2026  magiccode (魔法代码)
 
 import { ref, onMounted, onUnmounted } from 'vue'
+import { getServerBase } from '@/api/serverBase'
 
 /**
  * 从 localStorage 获取认证 Token
@@ -54,7 +55,7 @@ export function useSSE(options = {}) {
     }
 
     // 构建带认证的 SSE URL
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+    const baseUrl = getServerBase()
     const url = `${baseUrl}/api/v1/mails/stream?token=${encodeURIComponent(token)}`
 
     try {

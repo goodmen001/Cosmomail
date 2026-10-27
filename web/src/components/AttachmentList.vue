@@ -113,6 +113,7 @@
 
 <script setup>
 import { reactive } from 'vue'
+import { getServerBase } from '@/api/serverBase'
 
 const props = defineProps({
   attachments: {
@@ -191,7 +192,7 @@ async function downloadAttachmentWithProgress(id, onProgress) {
   if (token) headers['Authorization'] = `Bearer ${token}`
 
   const axios = (await import('axios')).default
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+  const baseUrl = getServerBase()
   const url = `${baseUrl}/api/v1/attachments/${id}/download`
 
   const response = await axios.get(url, {

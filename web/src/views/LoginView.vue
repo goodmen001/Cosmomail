@@ -59,6 +59,30 @@
             </header>
 
             <form class="auth-form" autocomplete="on" @submit.prevent="handleSubmit">
+              <label v-if="isNative" class="field" :class="{ focused: focused === 'server', invalid: errors.server }">
+                <span class="field-caption">服务器地址</span>
+                <span class="input-wrap">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/>
+                    <rect x="3" y="13" width="18" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/>
+                    <circle cx="7" cy="7.5" r="1" fill="currentColor"/>
+                    <circle cx="7" cy="16.5" r="1" fill="currentColor"/>
+                  </svg>
+                  <input
+                    v-model="form.server"
+                    type="text"
+                    inputmode="url"
+                    autocapitalize="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    placeholder="如 http://192.168.6.50:8080"
+                    @focus="focused = 'server'"
+                    @blur="focused = ''"
+                  />
+                </span>
+                <small v-if="errors.server">{{ errors.server }}</small>
+              </label>
+
               <label class="field" :class="{ focused: focused === 'username', invalid: errors.username }">
                 <span class="field-caption">用户名</span>
                 <span class="input-wrap">
@@ -208,6 +232,7 @@ import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import { useAppStore } from '@/stores/appStore'
+import { getServerBase, setServerBase, isNativeApp } from '@/api/serverBase'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -221,9 +246,10 @@ const themeTitle = computed(() => {
 const DEV_DEFAULT_USERNAME = import.meta.env.DEV ? 'admin' : ''
 const DEV_DEFAULT_PASSWORD = import.meta.env.DEV ? 'admin123' : ''
 
-const form = reactive({ username: DEV_DEFAULT_USERNAME, password: DEV_DEFAULT_PASSWORD })
+const isNative = isNativeApp()
+const form = reactive({ username: DEV_DEFAULT_USERNAME, password: DEV_DEFAULT_PASSWORD, server: getServerBase() })
 const regForm = reactive({ username: '', password: '', confirmPassword: '' })
-const errors = reactive({ username: '', password: '', confirmPwd: '' })
+const errors = reactive({ username: '', password: '', confirmPwd: '', server: '' })
 const errorMsg = ref('')
 const submitting = ref(false)
 const showPassword = ref(false)
@@ -245,11 +271,16 @@ function clearErrors() {
   errors.username = ''
   errors.password = ''
   errors.confirmPwd = ''
+  errors.server = ''
   errorMsg.value = ''
 }
 
 async function handleSubmit() {
   clearErrors()
+  if (isNative) {
+    if (!form.server.trim()) { errors.server = '请输入服务器地址'; return }
+    setServerBase(form.server)
+  }
   if (!form.username.trim()) { errors.username = '请输入用户名'; return }
   if (!form.password) { errors.password = '请输入密码'; return }
 

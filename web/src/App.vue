@@ -56,6 +56,9 @@
           </transition>
         </router-view>
       </div>
+
+      <!-- 手机端底部导航 -->
+      <MobileTabBar :unread-count="totalUnread" />
     </main>
   </div>
 
@@ -69,9 +72,11 @@ import { useRouter, useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import AppHeader from './components/AppHeader.vue'
 import AppToast from './components/AppToast.vue'
+import MobileTabBar from './components/MobileTabBar.vue'
 import { useAppStore } from './stores/appStore'
 import { useMailStore } from './stores/mailStore'
 import { useAuthStore } from './stores/authStore'
+import { updateBadge, refreshBadgeFromStats } from './composables/useAppBadge'
 
 // 模板中无法直接访问 vite define 的全局常量，需在 setup 中显式暴露
 const appVersion = __APP_VERSION__
@@ -108,6 +113,24 @@ watch(sidebarCollapsed, (val) => {
 
 const isDark = computed(() => appStore.isDark)
 const totalUnread = computed(() => appStore.unreadCount)
+
+// 全局未读数以 mailStore.stats 为准（邮件列表页实时维护），同步到 appStore
+// 供底部 TabBar 角标与桌面图标角标使用
+watch(
+  () => mailStore.stats?.unread || 0,
+  (n) => appStore.setUnreadCount(n),
+  { immediate: true }
+)
+
+// 桌面图标角标跟随未读数变化（App 原生角标 / Web setAppBadge）
+watch(totalUnread, (n) => updateBadge(n), { immediate: true })
+
+// 应用回到前台时以服务端统计为准刷新角标（移动端切回 App 场景）
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && authStore.isLoggedIn) {
+    refreshBadgeFromStats()
+  }
+})
 
 // 切换主题
 function toggleTheme() {

@@ -69,6 +69,7 @@
   /* --- z-index 层级 --- */
   --z-sidebar: 100;
   --z-header: 200;
+  --z-tabbar: 200;
   --z-dropdown: 300;
   --z-modal: 400;
   --z-toast: 500;

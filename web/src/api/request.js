@@ -2,10 +2,11 @@
 // Copyright (C) 2026  magiccode (魔法代码)
 
 import axios from 'axios'
+import { apiBase } from './serverBase'
 
-// 创建 axios 实例
+// 创建 axios 实例（baseURL 运行时可变：手机 App 指向用户输入的服务器地址）
 const request = axios.create({
-  baseURL: '/api/v1',
+  baseURL: apiBase(),
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
@@ -31,6 +32,8 @@ function navigateToLogin() {
 // 请求拦截器：自动附加 token
 request.interceptors.request.use(
   (config) => {
+    // 每次请求时重算 baseURL，支持登录页修改服务器地址后立即生效
+    config.baseURL = apiBase()
     const token = localStorage.getItem('cosmomail-token')
     if (token) config.headers.Authorization = `Bearer ${token}`
     return config
