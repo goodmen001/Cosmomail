@@ -207,6 +207,19 @@ function handleReply() {
     replySubject: subject,
     from: route.fullPath
   })
+  // 把原文内容放入 sessionStorage，写信页读取后作为引言填充正文
+  try {
+    const quoteHeader = `在 ${formatTime(mail.value.sent_at)}，${extractName(mail.value.from) || fromEmail} 写道：`
+    const htmlBody = mail.value.html_body || ''
+    const textBody = mail.value.text_body || ''
+    if (htmlBody || textBody) {
+      sessionStorage.setItem('cosmomail-reply-quote', JSON.stringify({
+        header: quoteHeader,
+        htmlBody,
+        textBody,
+      }))
+    }
+  } catch (_) { /* 引用失败不影响回复 */ }
   router.push(`/compose?${query.toString()}`)
 }
 

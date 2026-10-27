@@ -422,6 +422,15 @@ function insertLink() {
   }
 }
 
+// HTML 转义（用于回复引言中的纯文本原文）
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
 // 切换发送账号 → 默认加载该账号通讯录
 watch(() => form.value.account_id, () => {
   if (!allAccountContacts.value) loadContacts()
@@ -436,6 +445,20 @@ onMounted(async () => {
   if (route.query.replyTo) form.value.to = [route.query.replyTo]
   if (route.query.replySubject) form.value.subject = route.query.replySubject
   if (route.query.accountId) form.value.account_id = route.query.accountId
+  // 回复引用原文（由 MailReaderView 在跳转前写入 sessionStorage）
+  try {
+    const rawQuote = sessionStorage.getItem('cosmomail-reply-quote')
+    if (rawQuote && route.query.replyTo) {
+      const quote = JSON.parse(rawQuote)
+      sessionStorage.removeItem('cosmomail-reply-quote')
+      const quoteHtml = quote.htmlBody
+        ? `<br><br><div class="cosmomail-quote" style="margin:0;padding-left:12px;border-left:3px solid #ddd;color:#666;"><div>${quote.header}</div><blockquote style="margin:8px 0 0;">${quote.htmlBody}</blockquote></div>`
+        : `<br><br><div class="cosmomail-quote" style="margin:0;padding-left:12px;border-left:3px solid #ddd;color:#666;"><div>${quote.header}</div><blockquote style="margin:8px 0 0;white-space:pre-wrap;">${escapeHtml(quote.textBody || '')}</blockquote></div>`
+      form.value.html_body = quoteHtml
+      form.value.body = `\n\n${quote.header}\n${(quote.textBody || '').split('\n').map(l => '> ' + l).join('\n')}`
+      useHtmlMode.value = Boolean(quote.htmlBody)
+    }
+  } catch (_) { /* 引用失败不影响回复 */ }
 
   // 从草稿加载
   if (route.query.draftId) {
