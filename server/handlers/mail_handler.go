@@ -5,6 +5,7 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -365,6 +366,24 @@ func (h *MailHandler) Send(c *fiber.Ctx) error {
 	}
 	if strings.ContainsAny(req.Subject, "\r\n") {
 		return c.Status(400).JSON(fiber.Map{"error": "邮件主题包含非法字符"})
+	}
+
+	// 附件校验：解码后单个 ≤25MB，总计 ≤50MB（与常见邮箱限制对齐）
+	const maxSingleAttach = 25 * 1024 * 1024
+	const maxTotalAttach = 50 * 1024 * 1024
+	totalSize := 0
+	for _, a := range req.Attachments {
+		data, err := base64.StdEncoding.DecodeString(a.Data)
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "附件数据编码无效: " + a.Filename})
+		}
+		if len(data) > maxSingleAttach {
+			return c.Status(400).JSON(fiber.Map{"error": fmt.Sprintf("附件 %s 超过单文件 25MB 限制", a.Filename)})
+		}
+		totalSize += len(data)
+	}
+	if totalSize > maxTotalAttach {
+		return c.Status(400).JSON(fiber.Map{"error": "附件总大小超过 50MB 限制"})
 	}
 
 	result, err := h.service.SendMail(currentUserID(c), req)

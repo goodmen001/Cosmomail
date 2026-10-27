@@ -154,6 +154,27 @@
       ></textarea>
     </div>
 
+    <!-- 附件 -->
+    <div class="form-section">
+      <div class="attachment-bar">
+        <label class="attachment-add-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+          </svg>
+          添加附件
+          <input type="file" multiple hidden @change="handleFileSelect" />
+        </label>
+        <span v-if="attachments.length" class="attachment-total">{{ attachments.length }} 个附件 · 共 {{ formatSize(totalAttachSize) }}</span>
+      </div>
+      <ul v-if="attachments.length" class="attachment-list">
+        <li v-for="(f, i) in attachments" :key="i" class="attachment-chip">
+          <span class="attach-name" :title="f.name">{{ f.name }}</span>
+          <span class="attach-size">{{ formatSize(f.size) }}</span>
+          <button class="attach-remove" title="移除" @click="removeAttachment(i)">✕</button>
+        </li>
+      </ul>
+    </div>
+
     <!-- 发送按钮 -->
     <div class="compose-actions">
       <button class="btn btn-secondary btn-lg draft-btn" :disabled="saving" @click="handleSaveDraft">
@@ -224,6 +245,49 @@ const form = ref({
 const toInput = ref('')
 const ccInput = ref('')
 const bccInput = ref('')
+
+// ---- 附件 ----
+const attachments = ref([]) // { name, size, contentType, data(base64) }
+const MAX_SINGLE_SIZE = 25 * 1024 * 1024   // 25MB
+const MAX_TOTAL_SIZE = 50 * 1024 * 1024    // 50MB
+
+const totalAttachSize = computed(() => attachments.value.reduce((s, f) => s + f.size, 0))
+
+function formatSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function handleFileSelect(e) {
+  const files = Array.from(e.target.files || [])
+  e.target.value = '' // 允许重复选择同一文件
+  for (const file of files) {
+    if (file.size > MAX_SINGLE_SIZE) {
+      toast.error(`「${file.name}」超过单文件 25MB 限制`)
+      continue
+    }
+    if (totalAttachSize.value + file.size > MAX_TOTAL_SIZE) {
+      toast.error('附件总大小超过 50MB 限制')
+      break
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const base64 = String(reader.result || '').split(',')[1] || ''
+      attachments.value.push({
+        name: file.name,
+        size: file.size,
+        contentType: file.type || 'application/octet-stream',
+        data: base64,
+      })
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+function removeAttachment(index) {
+  attachments.value.splice(index, 1)
+}
 
 // 联系人（发信收件人记录）
 const contacts = ref([])
@@ -342,6 +406,13 @@ async function handleSend() {
     if (form.value.cc.length > 0) payload.cc = form.value.cc
     if (form.value.bcc.length > 0) payload.bcc = form.value.bcc
     if (useHtmlMode.value && form.value.html_body) payload.html_body = form.value.html_body
+    if (attachments.value.length > 0) {
+      payload.attachments = attachments.value.map(f => ({
+        filename: f.name,
+        content_type: f.contentType,
+        data: f.data,
+      }))
+    }
 
     await sendEmail(payload)
     sendResult.value = '邮件已成功发送'
@@ -489,6 +560,68 @@ onActivated(() => {
 </script>
 
 <style scoped>
+/* ---- 附件 ---- */
+.attachment-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.attachment-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px dashed var(--border-color, #d1d5db);
+  border-radius: 8px;
+  color: var(--text-secondary, #6b7280);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s);
+  -webkit-tap-highlight-color: transparent;
+}
+.attachment-add-btn:hover {
+  border-color: var(--primary-color, #4F6EF7);
+  color: var(--primary-color, #4F6EF7);
+  background: rgba(79, 110, 247, 0.04);
+}
+.attachment-total { font-size: 12px; color: var(--text-tertiary, #9ca3af); }
+.attachment-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.attachment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  padding: 5px 10px;
+  border-radius: 16px;
+  background: var(--bg-tertiary, #f3f4f6);
+  font-size: 12px;
+}
+.attach-name {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary, #111827);
+}
+.attach-size { color: var(--text-tertiary, #9ca3af); flex-shrink: 0; }
+.attach-remove {
+  border: none;
+  background: none;
+  color: var(--text-tertiary, #9ca3af);
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 13px;
+  line-height: 1;
+}
+.attach-remove:hover { color: #ef4444; }
+
 .compose-page {
   max-width: 800px;
   margin: 0 auto;

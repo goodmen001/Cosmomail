@@ -20,15 +20,23 @@ import (
 	"gorm.io/gorm"
 )
 
+// SendAttachment 发送附件（文件内容由前端直接上传，Base64 编码传输）
+type SendAttachment struct {
+	Filename    string `json:"filename"`    // 文件名
+	ContentType string `json:"content_type"` // MIME 类型
+	Data        string `json:"data"`         // Base64 编码的文件内容
+}
+
 // SendRequest 发送邮件请求
 type SendRequest struct {
-	AccountID uint     `json:"account_id"`
-	To        []string `json:"to" validate:"required,min=1"`
-	Cc        []string `json:"cc,omitempty"`
-	Bcc       []string `json:"bcc,omitempty"`
-	Subject   string   `json:"subject" validate:"required"`
-	Body      string   `json:"body"`                // 纯文本正文
-	HTMLBody  string   `json:"html_body,omitempty"` // HTML 正文（可选）
+	AccountID   uint             `json:"account_id"`
+	To          []string         `json:"to" validate:"required,min=1"`
+	Cc          []string         `json:"cc,omitempty"`
+	Bcc         []string         `json:"bcc,omitempty"`
+	Subject     string           `json:"subject" validate:"required"`
+	Body        string           `json:"body"`                // 纯文本正文
+	HTMLBody    string           `json:"html_body,omitempty"` // HTML 正文（可选）
+	Attachments []SendAttachment `json:"attachments,omitempty"` // 附件列表（可选）
 }
 
 // SendResult 发送结果
@@ -66,7 +74,7 @@ func SendMail(account *models.MailAccount, req *SendRequest, db *gorm.DB) (*Send
 
 	// 构建邮件内容（RFC822 格式）
 	from := account.Email
-	msgBytes := buildMessage(from, req.To, req.Cc, req.Bcc, req.Subject, req.Body, req.HTMLBody)
+	msgBytes := buildMessage(from, req.To, req.Cc, req.Bcc, req.Subject, req.Body, req.HTMLBody, req.Attachments)
 
 	// 合并所有收件人用于 MAIL FROM 验证
 	recipients := append(req.To, append(req.Cc, req.Bcc...)...)
@@ -261,7 +269,8 @@ func sanitizeEmailAddr(addr string) string {
 }
 
 // buildMessage 构建 RFC822 格式的原始邮件内容
-func buildMessage(from string, to, cc, bcc []string, subject, textBody, htmlBody string) []byte {
+// 带附件时使用 multipart/mixed 包裹正文（multipart/alternative 或纯文本）与附件
+func buildMessage(from string, to, cc, bcc []string, subject, textBody, htmlBody string, attachments []SendAttachment) []byte {
 	var sb strings.Builder
 	now := time.Now().Format("Mon, 02 Jan 2006 15:04:05 -0700") // RFC1123 格式
 
@@ -297,38 +306,104 @@ func buildMessage(from string, to, cc, bcc []string, subject, textBody, htmlBody
 	sb.WriteString(fmt.Sprintf("Message-ID: <%s@cosmomail>\r\n", generateMessageIDShort()))
 	sb.WriteString("MIME-Version: 1.0\r\n")
 
-	// --- 正文 ---
+	// 过滤无效附件
+	var validAttachments []SendAttachment
+	for _, a := range attachments {
+		if a.Filename != "" && a.Data != "" {
+			validAttachments = append(validAttachments, a)
+		}
+	}
+
+	// --- 正文（bodyPart 为正文完整 MIME 部分）---
+	var bodyPart string
 	if htmlBody != "" {
 		// Multipart alternative: 纯文本 + HTML
 		boundary := "=_Cosmo Mail_" + randomBoundary()
-		sb.WriteString(fmt.Sprintf("Content-Type: multipart/alternative; boundary=\"%s\"\r\n", boundary))
-		sb.WriteString("\r\n")
-
-		sb.WriteString(fmt.Sprintf("--%s\r\n", boundary))
-		sb.WriteString("Content-Type: text/plain; charset=UTF-8\r\n")
-		sb.WriteString("Content-Transfer-Encoding: base64\r\n")
-		sb.WriteString("\r\n")
-		sb.WriteString(encodeBase64(textBody))
-		sb.WriteString("\r\n")
-
-		sb.WriteString(fmt.Sprintf("--%s\r\n", boundary))
-		sb.WriteString("Content-Type: text/html; charset=UTF-8\r\n")
-		sb.WriteString("Content-Transfer-Encoding: base64\r\n")
-		sb.WriteString("\r\n")
-		sb.WriteString(encodeBase64(htmlBody))
-		sb.WriteString("\r\n")
-
-		sb.WriteString(fmt.Sprintf("--%s--\r\n", boundary))
+		bodyPart += fmt.Sprintf("Content-Type: multipart/alternative; boundary=\"%s\"\r\n\r\n", boundary)
+		bodyPart += fmt.Sprintf("--%s\r\n", boundary)
+		bodyPart += "Content-Type: text/plain; charset=UTF-8\r\n"
+		bodyPart += "Content-Transfer-Encoding: base64\r\n\r\n"
+		bodyPart += encodeBase64(textBody) + "\r\n"
+		bodyPart += fmt.Sprintf("--%s\r\n", boundary)
+		bodyPart += "Content-Type: text/html; charset=UTF-8\r\n"
+		bodyPart += "Content-Transfer-Encoding: base64\r\n\r\n"
+		bodyPart += encodeBase64(htmlBody) + "\r\n"
+		bodyPart += fmt.Sprintf("--%s--\r\n", boundary)
 	} else {
-		// 纯文本
-		sb.WriteString("Content-Type: text/plain; charset=UTF-8\r\n")
-		sb.WriteString("Content-Transfer-Encoding: base64\r\n")
-		sb.WriteString("\r\n")
-		sb.WriteString(encodeBase64(textBody))
-		sb.WriteString("\r\n")
+		bodyPart += "Content-Type: text/plain; charset=UTF-8\r\n"
+		bodyPart += "Content-Transfer-Encoding: base64\r\n\r\n"
+		bodyPart += encodeBase64(textBody) + "\r\n"
+	}
+
+	// --- 组装 ---
+	if len(validAttachments) > 0 {
+		// multipart/mixed: 正文 + 附件
+		mixedBoundary := "=_Cosmo Mail Mixed_" + randomBoundary()
+		sb.WriteString(fmt.Sprintf("Content-Type: multipart/mixed; boundary=\"%s\"\r\n\r\n", mixedBoundary))
+		sb.WriteString(fmt.Sprintf("--%s\r\n", mixedBoundary))
+		sb.WriteString(bodyPart)
+		for _, a := range validAttachments {
+			sb.WriteString(fmt.Sprintf("--%s\r\n", mixedBoundary))
+			sb.WriteString(fmt.Sprintf("Content-Type: %s\r\n", mimeHeaderEscape(a.ContentType, "application/octet-stream")))
+			sb.WriteString("Content-Transfer-Encoding: base64\r\n")
+			sb.WriteString(fmt.Sprintf("Content-Disposition: attachment; filename*=%s''%s\r\n\r\n", "UTF-8", rfc5987Encode(a.Filename)))
+			// 附件数据：前端传来的 Base64 按 76 字符换行重排
+			sb.WriteString(rewrapBase64(a.Data))
+			sb.WriteString("\r\n")
+		}
+		sb.WriteString(fmt.Sprintf("--%s--\r\n", mixedBoundary))
+	} else {
+		sb.WriteString(bodyPart)
 	}
 
 	return []byte(sb.String())
+}
+
+// mimeHeaderEscape 清洗 MIME 头值，空则回退默认值
+func mimeHeaderEscape(v, fallback string) string {
+	v = sanitizeHeaderValue(v)
+	if v == "" {
+		return fallback
+	}
+	return v
+}
+
+// rfc5987Encode 按 RFC 5987 编码文件名（支持中文等非 ASCII 字符）
+func rfc5987Encode(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') ||
+			strings.ContainsRune("!#$&+-.^_`|~", r) {
+			b.WriteRune(r)
+		} else {
+			for _, by := range []byte(string(r)) {
+				b.WriteString(fmt.Sprintf("%%%02X", by))
+			}
+		}
+	}
+	return b.String()
+}
+
+// rewrapBase64 将 Base64 字符串按 76 字符换行（清洗非法字符）
+func rewrapBase64(s string) string {
+	cleaned := strings.Map(func(r rune) rune {
+		if (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') ||
+			r == '+' || r == '/' || r == '=' {
+			return r
+		}
+		return -1
+	}, s)
+	var result strings.Builder
+	lineLen := 0
+	for _, r := range cleaned {
+		result.WriteRune(r)
+		lineLen++
+		if lineLen == 76 {
+			result.WriteString("\r\n")
+			lineLen = 0
+		}
+	}
+	return result.String()
 }
 
 // getSMTPHost 获取 SMTP 服务器地址
