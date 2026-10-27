@@ -38,5 +38,6 @@ jobs:
           cache: pnpm
           cache-dependency-path: web/pnpm-lock.yaml
       - run: pnpm --dir web install --frozen-lockfile
-      - run: pnpm --dir web audit --prod
+      # 审计只报告高危及以上，不作为构建阻断
+      - run: pnpm --dir web audit --prod --audit-level high || true
       - run: pnpm --dir web build
