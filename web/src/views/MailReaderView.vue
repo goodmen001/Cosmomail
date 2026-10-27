@@ -101,7 +101,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMailStore } from '@/stores/mailStore'
 import MailContent from '../components/MailContent.vue'
@@ -120,15 +120,43 @@ const error = ref(null)
 const mail = ref(null)
 
 // --- 数据获取 ---
-onMounted(async () => {
+async function loadMail() {
   const id = Number(route.params.id)
+  loading.value = true
   try {
     mail.value = await mailStore.fetchMailDetail(id)
+    scheduleAutoRead()
   } catch (e) {
     error.value = e.message || '邮件加载失败'
   } finally {
     loading.value = false
   }
+}
+
+// --- 打开邮件自动标记已读 ---
+// 用户打开并停留 2 秒后自动标记已读；立刻返回或切走则不标记
+let autoReadTimer = null
+
+function scheduleAutoRead() {
+  clearTimeout(autoReadTimer)
+  if (mail.value && !mail.value.is_read) {
+    autoReadTimer = setTimeout(() => {
+      if (mail.value && !mail.value.is_read) {
+        mail.value.is_read = true // 本地立即更新，避免列表闪烁
+        mailStore.markAsRead(mail.value.id, true)
+      }
+    }, 2000)
+  }
+}
+
+watch(() => route.params.id, () => {
+  if (route.params.id) loadMail()
+})
+
+onMounted(loadMail)
+
+onUnmounted(() => {
+  clearTimeout(autoReadTimer)
 })
 
 // --- 格式化邮箱字段（解析 JSON 数组） ---
