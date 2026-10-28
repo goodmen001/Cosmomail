@@ -347,6 +347,15 @@ func (w *AccountWorker) syncOnce() {
 			if count > 0 {
 				w.notifyNewMails(count, fetcher.SyncedMailIDs)
 			}
+			// ⭐ 兜底清理：开启"下载后删除"的账号，删除增量同步覆盖不到的存量远程邮件
+			// （开关开启前已同步的邮件、去重跳过的邮件、历史删除失败的遗留）
+			if w.account.DeleteAfterDownload {
+				if swept, sweepErr := fetcher.sweepServerMails(imapClient); sweepErr != nil {
+					log.Printf("⚠️  %s 兜底清理远程邮件失败: %v", w.account.Email, sweepErr)
+				} else if swept > 0 {
+					count += swept
+				}
+			}
 			// 继续同步已发送文件夹（失败不阻止主流程）
 			// 注意：已发送文件夹不做"下载后删除"，只对 INBOX 生效
 			sentFetcher := NewFetcher(w.db, w.config)

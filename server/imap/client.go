@@ -386,6 +386,60 @@ func (c *IMAPClient) tryUIDExpunge(uid uint32) error {
 	return nil
 }
 
+// DeleteMessages 批量删除服务器上的邮件（先统一打 \Deleted，再一次性 UID EXPUNGE）
+// 比逐封 DeleteMessage 少往返，且不会在遍历过程中触发 EXPUNGE 打乱序号。
+func (c *IMAPClient) DeleteMessages(uids []uint32) error {
+	if len(uids) == 0 {
+		return nil
+	}
+
+	selectData, err := c.SelectINBOX()
+	if err != nil {
+		return fmt.Errorf("选择 INBOX 失败: %w", err)
+	}
+
+	// 检查服务器是否允许设置删除标志（\Deleted 是否在 PermanentFlags 中）
+	canDelete := false
+	for _, f := range selectData.PermanentFlags {
+		if f == imap.FlagDeleted || f == imap.FlagWildcard {
+			canDelete = true
+			break
+		}
+	}
+	if !canDelete {
+		return fmt.Errorf("INBOX 不支持删除操作（PermanentFlags 中无 \\Deleted）")
+	}
+
+	uidSet := imap.UIDSet{}
+	for _, u := range uids {
+		uidSet.AddNum(imap.UID(u))
+	}
+
+	storeCmd := c.Client.Store(uidSet, &imap.StoreFlags{
+		Op:    imap.StoreFlagsAdd,
+		Flags: []imap.Flag{imap.FlagDeleted},
+	}, nil)
+	if err := storeCmd.Close(); err != nil {
+		return fmt.Errorf("批量标记删除标志失败: %w", err)
+	}
+
+	// 优先 UID EXPUNGE（UIDPLUS/IMAP4rev2），只删除指定 UID
+	uidExpungeCmd := c.Client.UIDExpunge(uidSet)
+	if err := uidExpungeCmd.Close(); err == nil {
+		log.Printf("🗑️  已通过 UID EXPUNGE 批量删除 %d 封源服务器邮件 (%s)", len(uids), c.Account.Email)
+		return nil
+	}
+
+	// 回退：普通 EXPUNGE（会永久删除所有已打 \Deleted 的邮件）
+	log.Printf("[INFO] UID EXPUNGE 不可用，批量回退普通 EXPUNGE (%d 封): %v", len(uids), err)
+	expungeCmd := c.Client.Expunge()
+	if err := expungeCmd.Close(); err != nil {
+		return fmt.Errorf("Expunge 失败: %w", err)
+	}
+	log.Printf("🗑️  已通过 EXPUNGE 批量删除 %d 封源服务器邮件 (%s)", len(uids), c.Account.Email)
+	return nil
+}
+
 // TestConnection 测试邮箱账号的连接是否可用（根据协议自动选择）
 func TestConnection(account *models.MailAccount, cfg *config.Config) error {
 	client, err := NewMailClient(account, cfg)

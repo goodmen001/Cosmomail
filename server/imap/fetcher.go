@@ -313,6 +313,73 @@ func (f *Fetcher) locallyComplete(mailID uint) bool {
 	return true
 }
 
+// sweepServerMails 兜底清理：开启"下载后删除远程邮件"的账号，在 INBOX 同步后
+// 将"远程仍存在、本地已有完整副本"的邮件批量打 \Deleted 并 EXPUNGE。
+// 覆盖逐封删除逻辑覆盖不到的场景：
+//   - 开启开关之前就同步过的存量邮件（增量同步 UID 游标不会再抓到它们）
+//   - 因去重被跳过、没走到逐封删除分支的邮件
+//   - 历史上删除失败（网络/服务器异常）留下的遗留邮件
+//
+// 安全性：只有本地正文完整（locallyComplete）的邮件才会被删除，且只处理 INBOX。
+func (f *Fetcher) sweepServerMails(client *IMAPClient) (int, error) {
+	mbox, err := client.SelectMailbox("INBOX")
+	if err != nil {
+		return 0, fmt.Errorf("选择 INBOX 失败: %w", err)
+	}
+	if mbox.NumMessages == 0 {
+		return 0, nil
+	}
+
+	// 拉取服务器上全部邮件的 UID + 标志
+	uidSet := imap.UIDSet{}
+	uidSet.AddRange(1, 0) // 1:*
+	fetchCmd := client.Client.Fetch(uidSet, &imap.FetchOptions{
+		UID:   true,
+		Flags: true,
+	})
+	defer fetchCmd.Close()
+
+	var localUIDs []uint32
+	for {
+		msg := fetchCmd.Next()
+		if msg == nil {
+			break
+		}
+		buf, err := msg.Collect()
+		if err != nil {
+			continue
+		}
+		localUIDs = append(localUIDs, uint32(buf.UID))
+	}
+
+	if len(localUIDs) == 0 {
+		return 0, nil
+	}
+
+	// 与本地库比对：只删除"本地已有完整副本"的 UID
+	var toDelete []uint32
+	for _, uid := range localUIDs {
+		var mail models.Mail
+		if err := f.db.Where("account_id = ? AND message_uid = ? AND folder = ?",
+			client.Account.ID, uid, models.FolderInbox).First(&mail).Error; err != nil {
+			continue // 本地没有这封邮件，保留在服务器
+		}
+		if f.locallyComplete(mail.ID) {
+			toDelete = append(toDelete, uid)
+		}
+	}
+
+	if len(toDelete) == 0 {
+		return 0, nil
+	}
+
+	if err := client.DeleteMessages(toDelete); err != nil {
+		return 0, err
+	}
+	log.Printf("🧹 兜底清理: %s 本次额外删除 %d 封存量远程邮件", client.Account.Email, len(toDelete))
+	return len(toDelete), nil
+}
+
 // parseMessage 解析单封邮件，返回解析后的 Mail 对象；若已存在则返回 nil（去重）
 func (f *Fetcher) parseMessage(client *IMAPClient, buf *imapclient.FetchMessageBuffer) (*models.Mail, *BodyResult, error) {
 	envelope := buf.Envelope
