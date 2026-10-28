@@ -64,23 +64,49 @@
         <span class="toggle-icon">{{ showCc ? '−' : '+' }}</span>
       </summary>
       <div class="cc-fields">
-        <div class="input-group">
+        <div class="input-group contact-input-wrap">
           <input
             v-model="ccInput"
             class="form-input"
             placeholder="抄送（可选）"
             @keydown.enter.prevent="addCc"
-            @blur="addCc"
+            @blur="onCcBlur"
+            @input="onCcContactInput"
+            @focus="onCcContactInput"
           />
+          <div v-if="ccSuggestions.length" class="contact-dropdown">
+            <div
+              v-for="ct in ccSuggestions"
+              :key="ct.email"
+              class="contact-item"
+              @mousedown.prevent="pickCcContact(ct.email)"
+            >
+              <span class="contact-email">{{ ct.email }}</span>
+              <span class="contact-meta">已发 {{ ct.use_count }} 次</span>
+            </div>
+          </div>
         </div>
-        <div class="input-group">
+        <div class="input-group contact-input-wrap">
           <input
             v-model="bccInput"
             class="form-input"
             placeholder="密送（可选）"
             @keydown.enter.prevent="addBcc"
-            @blur="addBcc"
+            @blur="onBccBlur"
+            @input="onBccContactInput"
+            @focus="onBccContactInput"
           />
+          <div v-if="bccSuggestions.length" class="contact-dropdown">
+            <div
+              v-for="ct in bccSuggestions"
+              :key="ct.email"
+              class="contact-item"
+              @mousedown.prevent="pickBccContact(ct.email)"
+            >
+              <span class="contact-email">{{ ct.email }}</span>
+              <span class="contact-meta">已发 {{ ct.use_count }} 次</span>
+            </div>
+          </div>
         </div>
       </div>
     </details>
@@ -334,6 +360,8 @@ function removeAttachment(index) {
 // 联系人（发信收件人记录）
 const contacts = ref([])
 const contactSuggestions = ref([])
+const ccSuggestions = ref([])
+const bccSuggestions = ref([])
 
 // 联系人范围：默认当前发送账号的通讯录，可切换为所有账号
 const allAccountContacts = ref(false)
@@ -367,6 +395,52 @@ function pickContact(email) {
   if (!form.value.to.includes(email)) form.value.to.push(email)
   toInput.value = ''
   contactSuggestions.value = []
+}
+
+// 抄送/密送联想：与收件人下拉同源（通讯录），已选地址不重复推荐
+function filterSuggestions(kw, selected) {
+  if (!kw) {
+    return contacts.value.slice(0, 8).filter(ct => !selected.includes(ct.email))
+  }
+  return contacts.value
+    .filter(ct => ct.email.includes(kw) && !selected.includes(ct.email))
+    .slice(0, 8)
+}
+
+function selectedAll() {
+  return [...form.value.to, ...form.value.cc, ...form.value.bcc]
+}
+
+function onCcContactInput() {
+  const kw = (ccInput.value || '').trim().toLowerCase().split(/[,;，；]/).pop().trim()
+  ccSuggestions.value = filterSuggestions(kw, selectedAll())
+}
+
+function pickCcContact(email) {
+  if (!form.value.cc.includes(email) && !form.value.to.includes(email)) form.value.cc.push(email)
+  ccInput.value = ''
+  ccSuggestions.value = []
+}
+
+function onCcBlur() {
+  addCc()
+  setTimeout(() => { ccSuggestions.value = [] }, 150)
+}
+
+function onBccContactInput() {
+  const kw = (bccInput.value || '').trim().toLowerCase().split(/[,;，；]/).pop().trim()
+  bccSuggestions.value = filterSuggestions(kw, selectedAll())
+}
+
+function pickBccContact(email) {
+  if (!form.value.bcc.includes(email) && !form.value.to.includes(email) && !form.value.cc.includes(email)) form.value.bcc.push(email)
+  bccInput.value = ''
+  bccSuggestions.value = []
+}
+
+function onBccBlur() {
+  addBcc()
+  setTimeout(() => { bccSuggestions.value = [] }, 150)
 }
 
 function onRecipientBlur() {

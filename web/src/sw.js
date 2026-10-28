@@ -88,14 +88,20 @@ self.addEventListener('notificationclick', (event) => {
 // 删除旧版本创建的 API 缓存。邮件、账号和设置属于私密且强时效数据，
 // 不应进入 CacheStorage，也不能由 stale-while-revalidate 返回旧结果。
 self.addEventListener('activate', (event) => {
-  event.waitUntil(caches.delete('api-cache'))
+  event.waitUntil(Promise.all([
+    caches.delete('api-cache'),
+    // 清理历史版本的图片缓存：站点图标等静态资源更新后旧 SW 缓存不会自动失效，
+    // 这里在激活时统一清除，避免旧 logo/图标残留
+    caches.delete('image-cache'),
+  ]))
 })
 
 // --- 运行时缓存策略 ---
 
-// 图片缓存
+// 图片缓存（站点图标除外：/icons/ 由 precache 精确按版本管理，
+// 若走 CacheFirst 会在图标更新后长时间返回旧图）
 registerRoute(
-  ({ request }) => request.destination === 'image',
+  ({ request, url }) => request.destination === 'image' && !url.pathname.startsWith('/icons/'),
   new CacheFirst({
     cacheName: 'image-cache',
     plugins: [
