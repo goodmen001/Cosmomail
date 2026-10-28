@@ -207,6 +207,7 @@ func (f *Fetcher) syncMailbox(client *IMAPClient, mailboxName, folder string) (i
 
 		// ⭐ 下载后删除远程邮件：仅当本地已完整保存（正文或 HTML 至少其一非空，
 		// 且所有附件要么内容在库、要么已缓存到磁盘、要么体积未知时允许懒加载）才打 \Deleted。
+		// 逐封删除仅针对 INBOX（DeleteMessage 固定选择 INBOX）；Sent 交给 sweepServerMails 批量清理。
 		if f.DeleteAfterDownload && f.folder == "inbox" {
 			if f.locallyComplete(parsed.ID) {
 				if err := client.DeleteMessage(uint32(buf.UID)); err != nil {
@@ -321,10 +322,33 @@ func (f *Fetcher) locallyComplete(mailID uint) bool {
 //   - 历史上删除失败（网络/服务器异常）留下的遗留邮件
 //
 // 安全性：只有本地正文完整（locallyComplete）的邮件才会被删除，且只处理 INBOX。
+// sweepServerMails 兜底清理：删除服务器上"本地已有完整副本"的存量邮件。
+// 开关开启前同步的邮件、去重跳过的邮件、历史删除失败的邮件都会在这里被清掉，
+// 避免删除账号重加后旧邮件重新出现。INBOX 与 Sent 文件夹均覆盖。
 func (f *Fetcher) sweepServerMails(client *IMAPClient) (int, error) {
-	mbox, err := client.SelectMailbox("INBOX")
+	swept := 0
+	for _, folderName := range []struct{ mailbox, folder string }{
+		{"INBOX", models.FolderInbox},
+		{"Sent", models.FolderSent},
+	} {
+		n, err := f.sweepMailbox(client, folderName.mailbox, folderName.folder)
+		if err != nil {
+			// Sent 文件夹可能不存在，静默跳过；INBOX 失败则上报
+			if folderName.folder == models.FolderInbox {
+				return 0, err
+			}
+			log.Printf("⚠️  %s 的 %s 文件夹兜底清理跳过: %v", client.Account.Email, folderName.mailbox, err)
+			continue
+		}
+		swept += n
+	}
+	return swept, nil
+}
+
+func (f *Fetcher) sweepMailbox(client *IMAPClient, mailboxName, folder string) (int, error) {
+	mbox, err := client.SelectMailbox(mailboxName)
 	if err != nil {
-		return 0, fmt.Errorf("选择 INBOX 失败: %w", err)
+		return 0, fmt.Errorf("选择 %s 失败: %w", mailboxName, err)
 	}
 	if mbox.NumMessages == 0 {
 		return 0, nil
@@ -361,7 +385,7 @@ func (f *Fetcher) sweepServerMails(client *IMAPClient) (int, error) {
 	for _, uid := range localUIDs {
 		var mail models.Mail
 		if err := f.db.Where("account_id = ? AND message_uid = ? AND folder = ?",
-			client.Account.ID, uid, models.FolderInbox).First(&mail).Error; err != nil {
+			client.Account.ID, uid, folder).First(&mail).Error; err != nil {
 			continue // 本地没有这封邮件，保留在服务器
 		}
 		if f.locallyComplete(mail.ID) {
@@ -373,10 +397,10 @@ func (f *Fetcher) sweepServerMails(client *IMAPClient) (int, error) {
 		return 0, nil
 	}
 
-	if err := client.DeleteMessages(toDelete); err != nil {
+	if err := client.DeleteMessages(mailboxName, toDelete); err != nil {
 		return 0, err
 	}
-	log.Printf("🧹 兜底清理: %s 本次额外删除 %d 封存量远程邮件", client.Account.Email, len(toDelete))
+	log.Printf("🧹 兜底清理: %s [%s] 本次额外删除 %d 封存量远程邮件", client.Account.Email, mailboxName, len(toDelete))
 	return len(toDelete), nil
 }
 

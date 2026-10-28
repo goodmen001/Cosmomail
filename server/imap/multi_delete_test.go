@@ -184,3 +184,86 @@ func TestSweepBacklog(t *testing.T) {
 	}
 	t.Log("✅ 兜底清理：开关开启前同步的存量远程邮件已全部删除，本地副本保留")
 }
+
+// TestSweepSentFolder 验证"下载后删除"同样清理已发送（Sent）文件夹：
+// 本地已有完整副本的 Sent 邮件会被兜底清理，避免删除账号重加后重新出现。
+func TestSweepSentFolder(t *testing.T) {
+	mem := imapmemserver.New()
+	u := imapmemserver.NewUser("sent@test", "pass")
+	u.Create("INBOX", nil)
+	u.Create("Sent", nil)
+	for i := 1; i <= 3; i++ {
+		raw := fmt.Sprintf("From: me@x.com\r\nTo: R%d <r%d@x.com>\r\nSubject: Sent%d\r\nDate: Mon, 26 Oct 2026 11:0%d:00 +0800\r\nMessage-ID: <sent%d@x.com>\r\nContent-Type: text/plain\r\n\r\nsentbody%d\r\n", i, i, i, i%10, i, i)
+		if _, err := u.Append("Sent", newLiteral([]byte(raw)), &imap.AppendOptions{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	mem.AddUser(u)
+	srv := imapserver.New(&imapserver.Options{
+		NewSession:   func(conn *imapserver.Conn) (imapserver.Session, *imapserver.GreetingData, error) { return mem.NewSession(), nil, nil },
+		InsecureAuth: true,
+	})
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	go srv.Serve(ln)
+	defer srv.Close()
+
+	dir := t.TempDir()
+	db, err := gorm.Open(sqlite.Open(filepath.Join(dir, "t.db")), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AutoMigrate(&models.Mail{}, &models.Attachment{}, &models.MailboxSyncState{}); err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{}
+	cfg.IMAP.SyncBatchSize = 50
+
+	conn, err := net.Dial("tcp", ln.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := imapclient.New(conn, &imapclient.Options{})
+	if err := client.Login("sent@test", "pass").Wait(); err != nil {
+		t.Fatal(err)
+	}
+	account := &models.MailAccount{Email: "sent@test", Protocol: "imap", SyncMode: "all"}
+	ic := &IMAPClient{Client: client, Account: account, conn: conn}
+
+	// 先不带开关同步（邮件入库、远程保留），再开启开关走 sweep
+	f := NewFetcher(db, cfg)
+	f.folder = "inbox"
+	if _, err := f.syncMailbox(ic, "Sent", "sent"); err != nil {
+		t.Fatal(err)
+	}
+	var cnt int64
+	db.Model(&models.Mail{}).Where("folder = ?", models.FolderSent).Count(&cnt)
+	if cnt != 3 {
+		t.Fatalf("本地 Sent 应有 3 封，实际 %d", cnt)
+	}
+
+	f2 := NewFetcher(db, cfg)
+	f2.folder = "sent"
+	f2.DeleteAfterDownload = true
+	swept, err := f2.sweepServerMails(ic)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if swept != 3 {
+		t.Fatalf("期望兜底清理 3 封已发送邮件，实际 %d", swept)
+	}
+	sel, err := client.Select("Sent", &imap.SelectOptions{}).Wait()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sel.NumMessages != 0 {
+		t.Fatalf("远程 Sent 应为空，实际 %d 封", sel.NumMessages)
+	}
+	db.Model(&models.Mail{}).Where("folder = ?", models.FolderSent).Count(&cnt)
+	if cnt != 3 {
+		t.Fatalf("本地 Sent 副本应保留 3 封，实际 %d", cnt)
+	}
+	t.Log("✅ 已发送文件夹兜底清理通过：远程 Sent 已清空，本地副本保留")
+}

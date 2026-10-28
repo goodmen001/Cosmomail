@@ -396,6 +396,9 @@ export const useAppStore = defineStore('app', () => {
     for (const [name, value] of Object.entries(palette)) {
       root.setProperty(name, value)
     }
+    // 皮肤表面覆盖：部分皮肤（曜石/月白）有固定的明暗基调，
+    // 必须以内联变量写在主题引擎之后，否则会被上面的内联调色板覆盖。
+    applySkinSurfaceOverrides(root)
     localStorage.setItem('primary-color', primaryColor.value)
     // 同步更新 meta theme-color（影响移动端浏览器地址栏颜色）
     let metaTheme = document.querySelector('meta[name="theme-color"]')
@@ -417,9 +420,61 @@ export const useAppStore = defineStore('app', () => {
   function applySkin() {
     document.documentElement.setAttribute('data-skin', skin.value)
     localStorage.setItem('skin', skin.value)
+    // 皮肤可能覆盖主题引擎的内联表面变量，切换后立即重写
+    applySkinSurfaceOverrides(document.documentElement.style)
     // 同步 meta theme-color
     let metaTheme = document.querySelector('meta[name="theme-color"]')
     if (metaTheme) metaTheme.content = primaryColor.value
+  }
+
+  // 各皮肤的固定表面变量（内联写入以确保优先级高于主题引擎调色板）
+  const SKIN_SURFACE_OVERRIDES = {
+    obsidian: {
+      '--canvas-bg': '#050508',
+      '--bg-primary': '#0a0a0e',
+      '--bg-secondary': '#101018',
+      '--bg-tertiary': '#16161f',
+      '--bg-elevated': '#0e0e15',
+      '--card-bg': '#12121a',
+      '--input-bg': '#10101a',
+      '--sidebar-bg': 'rgba(5, 5, 10, 0.72)',
+      '--header-bg': 'rgba(5, 5, 10, 0.66)',
+      '--glass-bg': 'rgba(16, 16, 26, 0.72)',
+      '--glass-border': 'rgba(0, 180, 216, 0.16)',
+      '--border-color': 'rgba(0, 180, 216, 0.14)',
+      '--border-light': 'rgba(0, 180, 216, 0.08)',
+      '--divider-color': 'rgba(0, 180, 216, 0.12)',
+      '--text-primary': '#e8ecf4',
+      '--text-secondary': '#9aa3b5',
+      '--text-tertiary': '#6b7488',
+    },
+    moonlight: {
+      '--canvas-bg': '#eef2f9',
+      '--bg-primary': '#ffffff',
+      '--bg-secondary': '#f6f8fc',
+      '--bg-tertiary': '#eef2f9',
+      '--bg-elevated': '#ffffff',
+      '--card-bg': '#ffffff',
+      '--input-bg': '#f2f5fb',
+      '--sidebar-bg': 'rgba(255, 255, 255, 0.72)',
+      '--header-bg': 'rgba(255, 255, 255, 0.66)',
+      '--glass-bg': 'rgba(255, 255, 255, 0.68)',
+      '--glass-border': 'rgba(255, 255, 255, 0.85)',
+      '--border-color': 'rgba(90, 110, 150, 0.16)',
+      '--border-light': 'rgba(90, 110, 150, 0.09)',
+      '--divider-color': 'rgba(90, 110, 150, 0.12)',
+      '--text-primary': '#1d2433',
+      '--text-secondary': '#5a6478',
+      '--text-tertiary': '#8a93a8',
+    },
+  }
+
+  function applySkinSurfaceOverrides(rootStyle) {
+    const overrides = SKIN_SURFACE_OVERRIDES[skin.value]
+    if (!overrides) return
+    for (const [name, value] of Object.entries(overrides)) {
+      rootStyle.setProperty(name, value)
+    }
   }
 
   function setSkin(value) {

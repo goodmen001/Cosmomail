@@ -154,3 +154,68 @@ html[data-skin='moonlight'] .card {
   border: 1px solid var(--glass-border);
   box-shadow: var(--float-shadow);
 }
+
+/* ============================================================
+   生效保障：皮肤画布层穿透
+   .app 容器自带不透明 --canvas-bg 背景，会完全遮住 body::before
+   上的皮肤渐变画布。这里让 .app 在启用皮肤时透明化，使极光/曜石/
+   月白画布可见；未设置 data-skin 时保持原样（兼容回退）。
+   ============================================================ */
+html[data-skin] .app {
+  background: transparent;
+}
+
+/* 应用 --skin-radius：悬浮内容卡片跟随皮肤圆角 */
+html[data-skin='aurora'] .app-content {
+  border-radius: var(--skin-radius);
+}
+html[data-skin='obsidian'] .app-content,
+html[data-skin='obsidian'] .card {
+  border-radius: var(--skin-radius);
+}
+html[data-skin='moonlight'] .app-content {
+  border-radius: var(--skin-radius);
+}
+
+/* 月白为浅色皮肤：浅色模式下侧边栏/顶栏玻璃化，营造整体苹果风 */
+html[data-skin='moonlight'] .app-sidebar,
+html[data-skin='moonlight'] .app-header {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--skin-glass-blur)) saturate(var(--skin-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--skin-glass-blur)) saturate(var(--skin-glass-saturate));
+}
+
+/* 曜石皮肤：侧边栏/顶栏融入纯黑画布 + 霓虹描边 */
+html[data-skin='obsidian'] .app-sidebar,
+html[data-skin='obsidian'] .app-header {
+  background: rgba(0, 0, 0, 0.55);
+  border-color: rgba(0, 180, 216, 0.18);
+}
+
+/* 曜石皮肤为纯黑 HUD 风：无论明暗模式，强制暗色表面 */
+html[data-skin='obsidian'] {
+  --bg-primary: #0a0a0e;
+  --bg-secondary: #101018;
+  --bg-tertiary: #16161f;
+  --bg-elevated: #0e0e15;
+  --card-bg: #12121a;
+  --input-bg: #10101a;
+  --border-color: rgba(0, 180, 216, 0.14);
+  --border-light: rgba(0, 180, 216, 0.08);
+  --text-primary: #e8ecf4;
+  --text-secondary: #9aa3b5;
+}
+
+/* 月白皮肤为浅色玻璃风：无论明暗模式，强制浅色表面 */
+html[data-skin='moonlight'] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f8fc;
+  --bg-tertiary: #eef2f9;
+  --bg-elevated: #ffffff;
+  --card-bg: #ffffff;
+  --input-bg: #f2f5fb;
+  --border-color: rgba(90, 110, 150, 0.14);
+  --border-light: rgba(90, 110, 150, 0.08);
+  --text-primary: #1d2433;
+  --text-secondary: #5a6478;
+}

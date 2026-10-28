@@ -388,14 +388,15 @@ func (c *IMAPClient) tryUIDExpunge(uid uint32) error {
 
 // DeleteMessages 批量删除服务器上的邮件（先统一打 \Deleted，再一次性 UID EXPUNGE）
 // 比逐封 DeleteMessage 少往返，且不会在遍历过程中触发 EXPUNGE 打乱序号。
-func (c *IMAPClient) DeleteMessages(uids []uint32) error {
+// mailboxName 指定目标文件夹（如 INBOX / Sent）。
+func (c *IMAPClient) DeleteMessages(mailboxName string, uids []uint32) error {
 	if len(uids) == 0 {
 		return nil
 	}
 
-	selectData, err := c.SelectINBOX()
+	selectData, err := c.SelectMailbox(mailboxName)
 	if err != nil {
-		return fmt.Errorf("选择 INBOX 失败: %w", err)
+		return fmt.Errorf("选择 %s 失败: %w", mailboxName, err)
 	}
 
 	// 检查服务器是否允许设置删除标志（\Deleted 是否在 PermanentFlags 中）
