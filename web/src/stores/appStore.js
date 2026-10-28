@@ -429,6 +429,24 @@ export const useAppStore = defineStore('app', () => {
 
   // 各皮肤的固定表面变量（内联写入以确保优先级高于主题引擎调色板）
   const SKIN_SURFACE_OVERRIDES = {
+    aurora: {
+      '--canvas-bg': '#0b0e1a',
+      '--bg-primary': '#0d1120',
+      '--bg-secondary': '#121728',
+      '--bg-tertiary': '#171d33',
+      '--bg-elevated': '#0f1322',
+      '--card-bg': '#10152a',
+      '--input-bg': '#121728',
+      '--glass-bg': 'rgba(18, 23, 40, 0.68)',
+      '--glass-border': 'rgba(148, 163, 216, 0.14)',
+      '--header-bg': 'rgba(10, 13, 26, 0.66)',
+      '--sidebar-bg': 'rgba(10, 13, 26, 0.72)',
+      '--border-color': 'rgba(148, 163, 216, 0.16)',
+      '--border-light': 'rgba(148, 163, 216, 0.08)',
+      '--text-primary': '#e6eaf6',
+      '--text-secondary': '#a3adc9',
+      '--text-tertiary': '#6f7a99',
+    },
     obsidian: {
       '--canvas-bg': '#050508',
       '--bg-primary': '#0a0a0e',
