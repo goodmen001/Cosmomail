@@ -110,6 +110,9 @@ const themeMode = computed(() => appStore.themeMode)
 const pageTitle = computed(() => {
   const titles = {
     '/mails': '收件箱',
+    '/folders': '目录与规则',
+    '/sent': '已发送',
+    '/drafts': '草稿',
     '/accounts': '邮箱管理',
     '/settings': '设置',
   }
@@ -169,10 +172,11 @@ function handleLogout() {
 }
 
 .header-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.5px;
+  line-height: var(--line-height-tight);
 }
 
 .unread-indicator {

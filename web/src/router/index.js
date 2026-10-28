@@ -19,7 +19,7 @@ const routes = [
     path: '/mails',
     name: 'MailList',
     component: () => import('../views/MailListView.vue'),
-    meta: { title: '邮件列表' }
+    meta: { title: '收件箱' }
   },
   {
     path: '/folders',

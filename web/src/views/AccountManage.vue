@@ -6,7 +6,6 @@
   <div class="account-manage">
     <!-- 页面标题栏 -->
     <div class="page-header">
-      <h2 class="page-title">邮箱账号管理</h2>
       <button class="btn btn-primary" @click="openForm()">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -230,10 +229,6 @@ function formatTime(dateStr) {
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--space-lg);
-}
-.page-title {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
 }
 
 /* ---- 列表模式（Grid 对齐）---- */

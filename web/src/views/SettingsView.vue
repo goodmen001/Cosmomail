@@ -4,7 +4,6 @@
 -->
 <template>
   <div class="settings-view">
-    <h2 class="page-title">设置</h2>
 
     <div class="settings-sections">
       <!-- 外观设置 -->
@@ -1175,11 +1174,6 @@ async function clearCache() {
 </script>
 
 <style scoped>
-.page-title {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  margin-bottom: var(--space-lg);
-}
 
 .settings-sections {
   display: flex;
@@ -1196,11 +1190,12 @@ async function clearCache() {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
+  letter-spacing: -0.2px;
   margin-bottom: var(--space-xs);
 }
 .section-desc {
-  font-size: var(--font-size-sm);
-  color: var(--text-tertiary);
+  font-size: 13px;
+  color: var(--text-secondary);
   margin-bottom: var(--space-lg);
 }
 
@@ -1331,14 +1326,14 @@ async function clearCache() {
 
 .section-subtitle {
   font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   color: var(--text-primary);
-  margin-bottom: var(--space-xs);
+  margin-bottom: var(--space-sm);
 }
 
 .color-desc {
-  font-size: var(--font-size-sm);
-  color: var(--text-tertiary);
+  font-size: 13px;
+  color: var(--text-secondary);
   margin-bottom: var(--space-md);
 }
 

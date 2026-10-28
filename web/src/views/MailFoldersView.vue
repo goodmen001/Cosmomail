@@ -293,30 +293,30 @@ onMounted(async () => {
 .folders-view { display: flex; flex-direction: column; gap: 16px; max-width: 900px; }
 .card { background: var(--bg-primary); border: 1px solid var(--border-light); border-radius: var(--radius-lg, 12px); padding: 16px 20px; }
 .account-row select { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); }
-.hint { margin: 8px 0 0; font-size: 12px; color: var(--text-secondary); }
+.hint { margin: 8px 0 0; font-size: var(--font-size-sm); color: var(--text-secondary); }
 .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.section-head h3 { margin: 0; font-size: 15px; }
-.empty { color: var(--text-secondary); font-size: 13px; text-align: center; padding: 16px 0; }
-.btn { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); cursor: pointer; font-size: 13px; }
+.section-head h3 { margin: 0; font-size: var(--font-size-md); font-weight: var(--font-weight-semibold); }
+.empty { color: var(--text-secondary); font-size: var(--font-size-base); text-align: center; padding: 16px 0; }
+.btn { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); cursor: pointer; font-size: var(--font-size-base); }
 .btn-primary { background: var(--primary-color, #4F6EF7); border-color: var(--primary-color, #4F6EF7); color: #fff; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-link { background: none; border: none; color: var(--primary-color, #4F6EF7); cursor: pointer; font-size: 12px; padding: 2px 6px; }
+.btn-link { background: none; border: none; color: var(--primary-color, #4F6EF7); cursor: pointer; font-size: var(--font-size-sm); padding: 2px 6px; }
 .btn-link.danger { color: #ef4444; }
 .folder-list, .rule-list { list-style: none; margin: 0; padding: 0; }
-.folder-row, .rule-row { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--border-light); font-size: 13px; flex-wrap: wrap; }
+.folder-row, .rule-row { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--border-light); font-size: var(--font-size-base); flex-wrap: wrap; }
 .folder-row:last-child, .rule-row:last-child { border-bottom: none; }
 .rule-row.disabled { opacity: 0.55; }
-.folder-slug { color: var(--text-secondary); font-size: 12px; font-family: monospace; }
+.folder-slug { color: var(--text-secondary); font-size: var(--font-size-sm); font-family: monospace; }
 .row-actions { margin-left: auto; display: flex; gap: 4px; }
-.rule-priority { background: var(--primary-50, rgba(79,110,247,0.1)); color: var(--primary-color, #4F6EF7); border-radius: 6px; padding: 2px 6px; font-size: 11px; font-weight: 600; }
+.rule-priority { background: var(--primary-50, rgba(79,110,247,0.1)); color: var(--primary-color, #4F6EF7); border-radius: 6px; padding: 2px 6px; font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); }
 .rule-desc { min-width: 0; word-break: break-all; }
 .rule-target { color: var(--text-secondary); white-space: nowrap; }
 .switch { display: inline-flex; align-items: center; }
 .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .modal { width: min(420px, calc(100vw - 32px)); max-height: 85vh; overflow-y: auto; }
-.modal h3 { margin: 0 0 14px; font-size: 15px; }
-.modal input, .modal select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px; margin-top: 4px; }
-.field { display: block; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary); }
+.modal h3 { margin: 0 0 14px; font-size: var(--font-size-md); }
+.modal input, .modal select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-size-base); margin-top: 4px; }
+.field { display: block; margin-bottom: 12px; font-size: var(--font-size-base); color: var(--text-secondary); }
 .switch-field input { width: auto; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 @media (max-width: 768px) {
