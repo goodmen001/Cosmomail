@@ -560,6 +560,14 @@ onUnmounted(() => {
   white-space: nowrap;
   margin-bottom: 2px;
 }
+/* button 形态的导航（目录/通讯录折叠头）：清除浏览器默认底框 */
+button.nav-item {
+  background: none;
+  border: none;
+  font: inherit;
+  width: 100%;
+  text-align: left;
+}
 .nav-item:hover {
   background: var(--bg-hover);
   color: var(--text-primary);

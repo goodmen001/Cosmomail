@@ -205,9 +205,9 @@ html[data-skin='aurora'] {
   --glass-border: rgba(148, 163, 216, 0.14);
   --border-color: rgba(148, 163, 216, 0.16);
   --border-light: rgba(148, 163, 216, 0.08);
-  --text-primary: #e6eaf6;
-  --text-secondary: #a3adc9;
-  --text-tertiary: #6f7a99;
+  --text-primary: #f1f4fb;
+  --text-secondary: #c0c8dd;
+  --text-tertiary: #8b96b3;
 }
 
 /* 极光皮肤：侧边栏/顶栏融入深色画布 + 微光描边 */
@@ -227,8 +227,8 @@ html[data-skin='obsidian'] {
   --input-bg: #10101a;
   --border-color: rgba(0, 180, 216, 0.14);
   --border-light: rgba(0, 180, 216, 0.08);
-  --text-primary: #e8ecf4;
-  --text-secondary: #9aa3b5;
+  --text-primary: #f2f5fa;
+  --text-secondary: #b8c0d0;
 }
 
 /* 月白皮肤为浅色玻璃风：无论明暗模式，强制浅色表面 */
