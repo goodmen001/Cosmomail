@@ -83,6 +83,9 @@ func main() {
 		WriteTimeout:       0,                   // 禁用写超时（SSE 长连接需要持续写入）
 		ReadBufferSize:     4096,
 		WriteBufferSize:    4096,
+		// 请求体上限：附件以 base64 内嵌于 JSON 发送（体积膨胀约 4/3），
+		// 后端附件校验允许总计 50MB，此处需覆盖 base64 后的体积并留余量
+		BodyLimit:          72 * 1024 * 1024,
 		DisableKeepalive:   false,               // 保持连接活跃
 	})
 
